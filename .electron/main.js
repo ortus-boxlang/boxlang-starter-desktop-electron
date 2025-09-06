@@ -32,7 +32,7 @@ const serverPort = 59700;
 // Enable debug mode for the server (true/false)
 const serverDebugMode = true;
 // Window Defaults
-const windowTitle = "BoxLang Application";
+const windowTitle = "BoxLang Starter Desktop";
 const windowHeight = 800;
 const windowWidth = 1200;
 // The loading view path
@@ -132,7 +132,31 @@ function registerGlobalShortcuts () {
  * Create the application menu
  */
 function createAppMenu () {
+    const isMac = process.platform === 'darwin';
+
     const template = [
+        // macOS app menu (first menu)
+        ...(isMac ? [{
+            label: app.getName(),
+            submenu: [
+                { role: 'about' },
+                { type: 'separator' },
+                { role: 'services' },
+                { type: 'separator' },
+                { role: 'hide' },
+                { role: 'hideothers' },
+                { role: 'unhide' },
+                { type: 'separator' },
+                {
+                    label: 'Quit ' + app.getName(),
+                    accelerator: 'Cmd+Q',
+                    click: () => {
+                        appIsQuitting = true;
+                        app.quit();
+                    }
+                }
+            ]
+        }] : []),
         {
             label: 'File',
             submenu: [
@@ -174,17 +198,19 @@ function createAppMenu () {
                     click: () => restartBoxLang()
                 },
                 { type: 'separator' },
-                {
-                    label: process.platform === 'darwin' ? 'Close Window' : 'Quit',
-                    accelerator: process.platform === 'darwin' ? 'Cmd+W' : 'Ctrl+Q',
+                // On non-Mac, put Quit in File menu
+                ...(!isMac ? [{
+                    label: 'Quit',
+                    accelerator: 'Ctrl+Q',
                     click: () => {
-                        if ( process.platform === 'darwin' ) {
-                            mainWindow?.close();
-                        } else {
-                            app.quit();
-                        }
+                        appIsQuitting = true;
+                        app.quit();
                     }
-                }
+                }] : [{
+                    label: 'Close Window',
+                    accelerator: 'Cmd+W',
+                    click: () => mainWindow?.close()
+                }])
             ]
         },
         {
@@ -236,12 +262,28 @@ function createAppMenu () {
             label: 'Help',
             submenu: [
                 {
-                    label: 'About BoxLang Application',
+                    label: 'About BoxLang Starter Desktop',
                     click: () => showAboutDialog()
                 },
+				{
+					label: "BoxLang Website",
+					click: () => shell.openExternal( 'https://www.boxlang.io' )
+				},
                 {
                     label: 'BoxLang Documentation',
-                    click: () => shell.openExternal( 'https://boxlang.ortussolutions.com' )
+                    click: () => shell.openExternal( 'https://boxlang.ortusbooks.com' )
+                },
+				{
+                    label: 'BoxLang Support',
+                    click: () => shell.openExternal( 'https://www.boxlang.io/plans' )
+                },
+				{
+                    label: 'BoxLang Slack',
+                    click: () => shell.openExternal( 'https://boxteam.ortussolutions.com' )
+                },
+				{
+                    label: 'BoxLang Community',
+                    click: () => shell.openExternal( 'https://community.ortussolutions.com' )
                 },
                 {
                     label: 'Report Issue',

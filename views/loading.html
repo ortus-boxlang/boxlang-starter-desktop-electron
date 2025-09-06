@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Loading...</title>
+        <style>
+            body {
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+                background-size: 600% 600%;
+                animation: boxlangGradient 15s ease infinite;
+                color: #00ffae;
+            }
+
+            @keyframes boxlangGradient {
+                0% {
+                    background-position: 0% 50%;
+                }
+                50% {
+                    background-position: 100% 50%;
+                }
+                100% {
+                    background-position: 0% 50%;
+                }
+            }
+
+            .loader {
+                border: 16px solid rgba(255, 255, 255, 0.1);
+                border-top: 16px solid #00ffae;
+                border-radius: 50%;
+                width: 120px;
+                height: 120px;
+                animation: spin 2s linear infinite;
+                margin-top: 20px;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+
+            .loading-text {
+                font-size: 2rem;
+                font-weight: 600;
+                letter-spacing: 0.5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="loading-text">Loading BoxLang Application</div>
+        <div class="loader"></div>
+    </body>
+</html>

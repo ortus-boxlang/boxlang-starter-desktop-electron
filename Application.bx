@@ -1,0 +1,101 @@
+/**
+ * Copyright 2005-2007 ColdBox Framework by Luis Majano and Ortus Solutions, Corp
+ * www.ortussolutions.com
+ * ---
+ * Application Listener
+ */
+class {
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Application Properties: Modify as you see fit!
+	 * --------------------------------------------------------------------------
+	 */
+	this.name                 = "My BoxLang Desktop Application";
+	this.sessionManagement    = true;
+	// Days, Hours, Minutes, Seconds
+	this.sessionTimeout       = createTimespan( 0, 1, 0, 0 );
+	this.setClientCookies     = true;
+	this.setDomainCookies     = true;
+	this.timezone             = "UTC";
+	this.whiteSpaceManagement = "smart";
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Java Class Loading
+	 * --------------------------------------------------------------------------
+	 */
+	this.javaSettings = {
+		loadPaths : [ expandPath( "./lib" ) ]
+	};
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * Location Mappings
+	 * --------------------------------------------------------------------------
+	 * - root : The root of your application
+	 */
+	this.mappings[ "/root" ]   = getDirectoryFromPath( getCurrentTemplatePath() );
+
+	/**
+	 * --------------------------------------------------------------------------
+	 * ORM + Datasource Settings
+	 * --------------------------------------------------------------------------
+	 */
+	// Default Datasource
+	this.datasource = "boxlangDB";
+	// SQL Lite Datasource Definition
+	this.datasources[ "boxlangDB" ] = {
+	"driver"  : "sqlite",
+	"protocol": "directory",
+	"database": "./config/db/boxlangDB"
+};
+
+	/**
+	 * Fires when the application starts
+	 */
+	public boolean function onApplicationStart(){
+		return true;
+	}
+
+	/**
+	 * Fires when the application ends
+	 *
+	 * @appScope The app scope
+	 */
+	public void function onApplicationEnd( struct appScope ){
+	}
+
+	/**
+	 * Fires on every request
+	 *
+	 * @targetPage The requested page
+	 */
+	public boolean function onRequestStart( string targetPage ){
+		return true;
+	}
+
+	/**
+	 * Fires on every session start
+	 */
+	public void function onSessionStart(){
+	}
+
+	/**
+	 * Fires on session end
+	 *
+	 * @sessionScope The session scope
+	 * @appScope     The app scope
+	 */
+	public void function onSessionEnd( struct sessionScope, struct appScope ){
+	}
+
+	/**
+	 * On missing template handler
+	 *
+	 * @template
+	 */
+	public boolean function onMissingTemplate( template ){
+	}
+
+}

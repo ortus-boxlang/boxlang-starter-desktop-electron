@@ -32,11 +32,14 @@ const serverPort = 59700;
 // Enable debug mode for the server (true/false)
 const serverDebugMode = true;
 // Window Defaults
-const windowTitle = "BoxLang Starter Desktop";
+const appName = "BoxLang Starter Desktop";
 const windowHeight = 800;
 const windowWidth = 1200;
 // The loading view path
 const loadingView =  path.join( projectRoot, "views/loading.html" );
+
+// Set app name early (before app is ready)
+app.setName( appName );
 
 /**
  * -----------------------------------------------------------
@@ -58,6 +61,17 @@ process.on( 'SIGTERM', () => { stopBoxLang(); app.quit(); } );
  * Create the main application window once Electron is ready
  */
 app.whenReady().then( () => {
+  // Ensure app name is set (sometimes needed for development)
+  app.setName( appName );
+
+  // Set about panel options (helps with app name on macOS)
+  if (process.platform === 'darwin') {
+    app.setAboutPanelOptions({
+      applicationName: appName,
+      applicationVersion: "1.0.0",
+      copyright: "© 2025 Ortus Solutions, Corp"
+    });
+  }
   createAppMenu();
   createWindow();
   createTray();
@@ -262,7 +276,7 @@ function createAppMenu () {
             label: 'Help',
             submenu: [
                 {
-                    label: 'About BoxLang Starter Desktop',
+                    label: 'About' + app.getName(),
                     click: () => showAboutDialog()
                 },
 				{
@@ -370,7 +384,7 @@ function createTray () {
     ] );
 
     tray.setContextMenu( contextMenu );
-    tray.setToolTip( `${windowTitle} - Port: ${serverPort}` );
+    tray.setToolTip( `${appName} - Port: ${serverPort}` );
 
     // Click to show/hide window
     tray.on( 'click', () => {
@@ -447,9 +461,9 @@ function restartBoxLang () {
 function showAboutDialog () {
     dialog.showMessageBox( mainWindow, {
         type: 'info',
-        title: 'About BoxLang Desktop Application',
-        message: windowTitle,
-        detail: `Version: 1.0.0\nBoxLang Desktop Application\nBuilt with Electron and Vite\n\nServer Port: ${serverPort}\nDebug Mode: ${serverDebugMode ? 'Enabled' : 'Disabled'}`,
+        title: 'About ' + appName,
+        message: appName,
+        detail: `Version: 1.0.0\n${appName}\nBuilt with Electron and Vite\n\nServer Port: ${serverPort}\nDebug Mode: ${serverDebugMode ? 'Enabled' : 'Disabled'}`,
         buttons: [ 'OK' ]
     } );
 }
@@ -461,7 +475,7 @@ function createWindow () {
     mainWindow = new BrowserWindow( {
         width: windowWidth,
         height: windowHeight,
-		title: windowTitle,
+		title: appName,
 		// Show window when ready in production, immediately in development
 		show: isDevelopment,
 		// NOTE: icon is used on Windows/Linux. Prefer .ico on Windows, .png on Linux.
@@ -485,7 +499,7 @@ function createWindow () {
 	// Window's only icon, requires a nativeImage
 	const overlay = nativeImage.createFromPath( path.join( projectRoot, 'includes/icons/icon_32x32.png' ) );
 	if ( !overlay.isEmpty() ) {
-		mainWindow.setOverlayIcon( overlay, windowTitle );
+		mainWindow.setOverlayIcon( overlay, appName );
 	}
 
 	// Windows-only: taskbar overlay icon (ideally 16x16 PNG)
@@ -494,7 +508,7 @@ function createWindow () {
 			resolveAsset( 'includes', 'overlay-16x16.png' )
 		);
 		if ( !overlayIcon.isEmpty() ) {
-			mainWindow.setOverlayIcon( overlayIcon, windowTitle );
+			mainWindow.setOverlayIcon( overlayIcon, appName );
 		}
 	}
 

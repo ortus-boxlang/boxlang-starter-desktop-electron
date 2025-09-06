@@ -321,3 +321,49 @@ select {
 		font-size: 1.5rem;
 	}
 }
+
+// Icon styles - rounded icons
+img[src*="icon"],
+.icon,
+img[class*="icon"],
+img.rounded-icon,
+.app-icon {
+	border-radius: 20%;
+	transition: all 0.3s ease;
+
+	&:hover {
+		transform: scale(1.05);
+		border-radius: 25%;
+	}
+}
+
+// Specific sizes for different icon types
+.icon-small, 
+img[width="16"],
+img[width="32"] {
+	border-radius: 15%;
+}
+
+.icon-medium,
+img[width="64"],
+img[width="128"] {
+	border-radius: 20%;
+}
+
+.icon-large,
+img[width="256"],
+img[width="512"] {
+	border-radius: 25%;
+}
+
+// Avatar-style icons (fully rounded)
+.icon-avatar,
+.rounded-full {
+	border-radius: 50% !important;
+}
+
+// Favicon and web icons
+link[rel*="icon"] img,
+.favicon {
+	border-radius: 20%;
+}

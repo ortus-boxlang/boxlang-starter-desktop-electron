@@ -46,6 +46,7 @@ class {
 	 * Fires when the application starts
 	 */
 	public boolean function onApplicationStart(){
+		application.viteHelper = new includes.helpers.ViteHelper();
 		return true;
 	}
 

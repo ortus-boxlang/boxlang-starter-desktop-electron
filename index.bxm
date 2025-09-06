@@ -4,14 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BoxLang Desktop Application</title>
-
-    <bx:script>
-        // Initialize Vite helper
-        viteHelper = new includes.helpers.ViteHelper();
-    </bx:script>
-
     <!-- Vite CSS Assets -->
-    <bx:output>#viteHelper.styles( "styles" )#</bx:output>
+    <bx:output>#application.viteHelper.styles( "styles" )#</bx:output>
 
 </head>
 <body>
@@ -33,11 +27,22 @@
                 </div>
 
                 <div class="mt-4">
+                    <h3>Icons Demo (Rounded)</h3>
+                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                        <img src="includes/icons/icon_32x32.png" alt="32x32 Icon" class="icon" width="32" height="32">
+                        <img src="includes/icons/icon_128x128.png" alt="128x128 Icon" class="icon" width="64" height="64">
+                        <img src="includes/icons/icon_128x128.png" alt="128x128 Icon" class="icon" width="128" height="128">
+                        <img src="includes/icons/icon_128x128.png" alt="Avatar Style" class="icon-avatar" width="64" height="64">
+                    </div>
+                    <p><small>Icons are automatically rounded with hover effects</small></p>
+                </div>
+
+                <div class="mt-4">
                     <h3>Environment Info</h3>
-                    <p><strong>Development Mode:</strong> <bx:output>#viteHelper.isDev() ? 'Yes' : 'No'#</bx:output></p>
+                    <p><strong>Development Mode:</strong> <bx:output>#application.viteHelper.isDev() ? 'Yes' : 'No'#</bx:output></p>
                     <p><strong>Current Time:</strong> <bx:output>#now()#</bx:output></p>
-                    <bx:if condition="#viteHelper.isDev()#">
-                        <p><strong>Vite Dev Server:</strong> <bx:output>#viteHelper.devServerUrl()#</bx:output></p>
+                    <bx:if condition="#application.viteHelper.isDev()#">
+                        <p><strong>Vite Dev Server:</strong> <bx:output>#application.viteHelper.devServerUrl()#</bx:output></p>
                     </bx:if>
                 </div>
             </div>
@@ -76,7 +81,7 @@
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
     <!-- Vite JavaScript Assets -->
-    <bx:output>#viteHelper.scripts( "app" )#</bx:output>
+    <bx:output>#application.viteHelper.scripts( "app" )#</bx:output>
 
     <script>
         // Example JavaScript functions

@@ -30,7 +30,6 @@
 
                 <div class="mt-4">
                     <button class="btn" onclick="showAlert()">Test JavaScript</button>
-                    <button class="btn btn-secondary" onclick="changeTheme()">Toggle Theme</button>
                 </div>
 
                 <div class="mt-4">
@@ -83,10 +82,6 @@
         // Example JavaScript functions
         function showAlert() {
             alert('Hello from BoxLang + Electron + Vite!');
-        }
-
-        function changeTheme() {
-            document.body.classList.toggle( 'gradient-bg' );
         }
     </script>
 </body>

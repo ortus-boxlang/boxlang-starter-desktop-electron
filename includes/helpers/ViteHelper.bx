@@ -18,7 +18,7 @@ class {
 
         // Load manifest in production
         if ( !variables.isDevelopment && fileExists( variables.manifestPath ) ) {
-            variables.manifest = deserializeJSON( fileRead( variables.manifestPath ) );
+            variables.manifest = JSONDeserialize( fileRead( variables.manifestPath ) );
         } else {
             variables.manifest = {};
         }

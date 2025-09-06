@@ -9,15 +9,18 @@
 
 // Variables
 :root {
-	--primary-color: #00ffae;
-	--secondary-color: #2c5364;
-	--background-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+	// Colors
+	--primary-color: #007acc;
+	--primary-hover: #005a9e;
+	--secondary-color: #6c757d;
+	--success-color: #28a745;
+	--danger-color: #dc3545;
+	--warning-color: #ffc107;
+	--info-color: #17a2b8;
+
+	// Text colors
 	--text-color: #333;
-	--text-light: #666;
-	--border-color: #ddd;
-	--border-radius: 8px;
-	--shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-	--font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	--text-muted: #6c757d;
 }
 
 // Base styles
@@ -37,28 +40,6 @@ body {
 
 body {
 	background: #f5f5f5;
-
-	// For Electron apps that want the gradient background
-	&.gradient-bg {
-		background: var(--background-gradient);
-		background-size: 600% 600%;
-		animation: gradientShift 15s ease infinite;
-		color: white;
-	}
-}
-
-@keyframes gradientShift {
-	0% {
-		background-position: 0% 50%;
-	}
-
-	50% {
-		background-position: 100% 50%;
-	}
-
-	100% {
-		background-position: 0% 50%;
-	}
 }
 
 // Typography

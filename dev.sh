@@ -62,6 +62,18 @@ dev_mode() {
     npm run dev:electron
 }
 
+# Start just Electron (assumes BoxLang is running separately)
+electron_only() {
+    print_warning "Starting Electron app only..."
+    npm run start
+}
+
+# Start BoxLang server separately (for debugging)
+boxlang_only() {
+    print_warning "Starting BoxLang MiniServer only..."
+    boxlang-miniserver -p 59777 --debug --rewrites --host 127.0.0.1 -w . --configPath config/boxlang.json
+}
+
 # Clean build artifacts
 clean() {
     print_warning "Cleaning build artifacts..."
@@ -79,6 +91,8 @@ show_help() {
     echo ""
     echo "Commands:"
     echo "  dev         Start development mode (Vite + Electron)"
+    echo "  electron    Start Electron app only"
+    echo "  boxlang     Start BoxLang server only"
     echo "  build       Build assets for production"
     echo "  package     Package the application"
     echo "  clean       Clean build artifacts"
@@ -86,9 +100,9 @@ show_help() {
     echo "  help        Show this help message"
     echo ""
     echo "Examples:"
-    echo "  $0 dev      # Start development"
-    echo "  $0 build    # Build for production"
-    echo "  $0 package  # Create distributable"
+    echo "  $0 dev      # Start full development (recommended)"
+    echo "  $0 electron # Start just Electron"
+    echo "  $0 boxlang  # Start just BoxLang server"
 }
 
 # Main script logic
@@ -99,6 +113,14 @@ case "${1:-help}" in
         check_npm
         check_dependencies
         dev_mode
+        ;;
+    "electron")
+        check_npm
+        check_dependencies
+        electron_only
+        ;;
+    "boxlang")
+        boxlang_only
         ;;
     "build")
         check_npm

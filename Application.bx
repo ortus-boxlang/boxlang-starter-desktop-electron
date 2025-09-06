@@ -22,15 +22,6 @@ class {
 
 	/**
 	 * --------------------------------------------------------------------------
-	 * Java Class Loading
-	 * --------------------------------------------------------------------------
-	 */
-	this.javaSettings = {
-		loadPaths : [ expandPath( "./lib" ) ]
-	};
-
-	/**
-	 * --------------------------------------------------------------------------
 	 * Location Mappings
 	 * --------------------------------------------------------------------------
 	 * - root : The root of your application
@@ -48,7 +39,7 @@ class {
 	this.datasources[ "boxlangDB" ] = {
 	"driver"  : "sqlite",
 	"protocol": "directory",
-	"database": "./config/db/boxlangDB"
+	"database": "./.db/boxlangDB"
 };
 
 	/**

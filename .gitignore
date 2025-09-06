@@ -3,11 +3,17 @@
 settings.xml
 WEB-INF
 
+# BoxLang Home
+.boxlang/classes/**
+.boxlang/logs/**
+# Seed is never in source, so each desktop app is secure
+.boxlang/config/.seed
+
 # Engines + Database + CBFS + Secrets
 .env
 .engine/**
 .cbfs/**
-build/.db/**
+.database/**
 
 # logs + tests
 logs/**

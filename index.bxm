@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoxLang Electron Application</title>
+
+    <bx:script>
+        // Initialize Vite helper
+        viteHelper = new includes.helpers.ViteHelper();
+    </bx:script>
+
+    <!-- Vite CSS Assets -->
+    <bx:output>#viteHelper.styles( "styles" )#</bx:output>
+
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>Welcome to BoxLang + Electron + Vite!</h1>
+            </div>
+            <div class="card-body">
+                <p>This is a starter template that combines:</p>
+                <ul>
+                    <li><strong>BoxLang</strong> - Modern CFML runtime</li>
+                    <li><strong>Electron</strong> - Cross-platform desktop apps</li>
+                    <li><strong>Vite</strong> - Fast build tool and dev server</li>
+                </ul>
+
+                <div class="mt-4">
+                    <button class="btn" onclick="showAlert()">Test JavaScript</button>
+                    <button class="btn btn-secondary" onclick="changeTheme()">Toggle Theme</button>
+                </div>
+
+                <div class="mt-4">
+                    <h3>Environment Info</h3>
+                    <p><strong>Development Mode:</strong> <bx:output>#viteHelper.isDev() ? 'Yes' : 'No'#</bx:output></p>
+                    <p><strong>Current Time:</strong> <bx:output>#now()#</bx:output></p>
+                    <bx:if condition="#viteHelper.isDev()#">
+                        <p><strong>Vite Dev Server:</strong> <bx:output>#viteHelper.devServerUrl()#</bx:output></p>
+                    </bx:if>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Getting Started</h2>
+            </div>
+            <div class="card-body">
+                <h4>Development Workflow</h4>
+                <ol>
+                    <li>Run <code>npm run dev</code> to start Vite dev server</li>
+                    <li>Run <code>npm run start</code> to start Electron app</li>
+                    <li>Or use <code>npm run dev:electron</code> to run both together</li>
+                </ol>
+
+                <h4>Building for Production</h4>
+                <ol>
+                    <li>Run <code>npm run build</code> to build assets</li>
+                    <li>Run <code>npm run package</code> to create distributable</li>
+                </ol>
+
+                <h4>File Structure</h4>
+                <ul>
+                    <li><code>resources/assets/js/</code> - JavaScript files</li>
+                    <li><code>resources/assets/scss/</code> - SCSS stylesheets</li>
+                    <li><code>includes/helpers/</code> - BoxLang helper components</li>
+                    <li><code>electron/</code> - Electron main process</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alpine.js for interactivity (add to your dependencies if needed) -->
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <!-- Vite JavaScript Assets -->
+    <bx:output>#viteHelper.scripts( "app" )#</bx:output>
+
+    <script>
+        // Example JavaScript functions
+        function showAlert() {
+            alert('Hello from BoxLang + Electron + Vite!');
+        }
+
+        function changeTheme() {
+            document.body.classList.toggle('gradient-bg');
+        }
+    </script>
+</body>
+</html>

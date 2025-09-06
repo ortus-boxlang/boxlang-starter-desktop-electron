@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 
 // Dynamic imports
 const path = await import( "path" );
-const http = await import( "http" );
 process.env.PATH = process.env.PATH + ":/usr/local/bin";
 
 // Get the current file name
@@ -41,6 +40,16 @@ const loadingView =  path.join( projectRoot, "views/loading.html" );
  * -----------------------------------------------------------
  */
 
+const gotLock = app.requestSingleInstanceLock?.() ?? true;
+if ( !gotLock ) {
+	app.quit();
+}
+let appIsQuitting = false;
+
+/** extra safety for dev exits (Ctrl+C / kill) */
+process.on( 'SIGINT', () => { stopBoxLang(); app.quit(); } );
+process.on( 'SIGTERM', () => { stopBoxLang(); app.quit(); } );
+
 /**
  * Create the main application window once Electron is ready
  */
@@ -49,13 +58,33 @@ app.whenReady().then( () => {
   startBoxLang();
 } );
 
-/**
- * Quit the app when all windows are closed (except on macOS)
- */
+ // Graceful shutdown of BoxLang process
 app.on( "before-quit", () => {
-    if ( boxLangProcess ) {
-        boxLangProcess.kill();
+    appIsQuitting = true;
+	stopBoxLang(); // one place to stop the child
+} );
+
+// Quit when all windows are closed (except on macOS)
+app.on( 'window-all-closed', () => {
+    if ( process.platform !== 'darwin' ) {
+		app.quit();
+		// before-quit will run and stop BoxLang
+	}
+} );
+
+app.on( 'activate', () => {
+    if ( BrowserWindow.getAllWindows().length === 0 ) {
+        createWindow();
+        if ( !boxLangProcess || boxLangProcess.killed ) {
+            startBoxLang();
+        }
     }
+} );
+
+//  if a second instance is launched, focus the existing window
+app.on?.( 'second-instance', () => {
+  const [ win ] = BrowserWindow.getAllWindows();
+  if ( win ) { win.show(); win.focus(); }
 } );
 
 /**
@@ -65,10 +94,24 @@ app.on( "before-quit", () => {
  */
 
 /**
+ * Stop the BoxLang mini server
+ *
+ * @param {*} signal The signal to send (default: SIGTERM)
+ */
+function stopBoxLang ( signal = 'SIGTERM' ) {
+  if (  boxLangProcess && !boxLangProcess.killed ) {
+	try { boxLangProcess.kill( signal ); }
+	catch {
+		console.warn( "BoxLang process already killed." );
+	}
+  }
+}
+
+/**
  * Create the main application window
  */
 function createWindow () {
-    mainWindow = new BrowserWindow({
+    mainWindow = new BrowserWindow( {
         width: windowWidth,
         height: windowHeight,
 		title: windowTitle,
@@ -81,10 +124,10 @@ function createWindow () {
             contextIsolation: true,
             enableRemoteModule: false,
         }
-    });
+    } );
 
 	// Window's only icon, requires a nativeImage
-	const overlay = nativeImage.createFromPath( path.join(projectRoot, 'includes/icon.iconset/icon_32x32.png' ) );
+	const overlay = nativeImage.createFromPath( path.join( projectRoot, 'includes/icon.iconset/icon_32x32.png' ) );
 	mainWindow.setOverlayIcon( overlay, windowTitle );
 
 	// Windows-only: taskbar overlay icon (ideally 16x16 PNG)
@@ -99,17 +142,24 @@ function createWindow () {
 
 	// macOS-only: set the dock icon (must be .icns)
 	if ( process.platform === 'darwin' && app?.dock ) {
-		app.dock.setIcon( resolveAsset('includes', 'icon.icns' ) );
+		app.dock.setIcon( resolveAsset( 'includes', 'icon.icns' ) );
 	}
 
 	// Load the loading view first
     mainWindow.loadFile( loadingView );
+	// Monitor close to hide on macOS
+	mainWindow.on( 'close', ( e ) => {
+		if ( !appIsQuitting && process.platform === 'darwin' ) {
+			e.preventDefault();    // just hide window instead of quitting
+			mainWindow.hide();
+		}
+	} );
 }
 
 /**
  * Startup the BoxLang mini server
  */
-function startBoxLang() {
+function startBoxLang () {
 	console.log( "Starting BoxLang mini server..." );
 
 	// Start up the boxlang mini server
@@ -121,6 +171,8 @@ function startBoxLang() {
 			// Port
 			"-p",
 			serverPort.toString(),
+			// If serverDebugMode = true, then add --debug, else nothing
+			serverDebugMode ? "--debug" : "",
 			// Enable Rewrites
 			"--rewrites",
 			// Bind locally only, this is a desktop app
@@ -128,7 +180,7 @@ function startBoxLang() {
 			"127.0.0.1",
 			// Webroot
 			"-w",
-			rootPath,
+			projectRoot,
 			// BoxLang Configuration Path
             "--configPath",
             "config/boxlang.json"
@@ -136,7 +188,7 @@ function startBoxLang() {
 		// Spawn Options
 		// See https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
 		{
-			cwd: rootPath,
+			cwd: projectRoot,
 			detached: false,
 			shell: false,
 			windowsHide: true,
@@ -161,23 +213,23 @@ function startBoxLang() {
  *
  * @param {*} message The message from the server
  */
-function checkServer( message) {
-    if ( message.toString().includes("BoxLang MiniServer started" ) ) {
+function checkServer ( message ) {
+    if ( message.toString().includes( "BoxLang MiniServer started" ) ) {
         let loadPage = () => {
             mainWindow.loadURL( "http://localhost:" + serverPort + "/" );
         }
-        setTimeout(() => {
+        setTimeout( () => {
             loadPage();
         }, 1000 );
         mainWindow.webContents.on( "did-finish-load", () => {
             console.log( "Page loaded successfully." );
-        });
+        } );
         mainWindow.webContents.on( "did-fail-load", () => {
-            setTimeout(() => {
+            setTimeout( () => {
                 loadPage();
                 console.log( "Retrying to load the page..." );
             }, 1000 );
-        });
+        } );
 
         boxLangProcess.stdout.removeListener( "data", checkServer );
     }
@@ -190,6 +242,6 @@ function checkServer( message) {
  *
  * @returns {string} The resolved path
  */
-function resolveAsset( ...p ) {
+function resolveAsset ( ...p ) {
   return path.join( projectRoot, ...p );
 }

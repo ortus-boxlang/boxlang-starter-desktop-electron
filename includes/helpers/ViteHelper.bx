@@ -1,0 +1,171 @@
+/**
+ * Vite Asset Helper for BoxLang
+ *
+ * This component provides helper functions to integrate Vite-built assets
+ * into BoxLang templates, including proper hashing and manifest support.
+ */
+class {
+
+    /**
+     * Initialize the Vite helper
+     */
+    function init() {
+        variables.isDevelopment = ( getSystemSetting( "ENVIRONMENT", "development" ) == "development" );
+        variables.viteHost = getSystemSetting( "VITE_HOST", "127.0.0.1:3000" );
+        variables.viteProtocol = getSystemSetting( "VITE_PROTOCOL", "http" );
+        variables.manifestPath = expandPath( "./dist/.vite/manifest.json" );
+        variables.distPath = "/dist";
+
+        // Load manifest in production
+        if ( !variables.isDevelopment && fileExists( variables.manifestPath ) ) {
+            variables.manifest = deserializeJSON( fileRead( variables.manifestPath ) );
+        } else {
+            variables.manifest = {};
+        }
+
+        return this;
+    }
+
+    /**
+     * Get the URL for a Vite asset
+     *
+     * @entryPoint The entry point name (e.g., 'app', 'styles')
+     * @type The type of asset ('js' or 'css')
+     *
+     * @return The URL to the asset
+     */
+    function asset( required string entryPoint, string type = "js" ) {
+        if ( variables.isDevelopment ) {
+            // In development, return the Vite dev server URLs
+            if ( arguments.type == "css" ) {
+                // CSS is handled by Vite's HMR in development
+                return "";
+            }
+            return "#variables.viteProtocol#://#variables.viteHost#/resources/assets/#arguments.type#/#arguments.entryPoint#.#arguments.type#";
+        } else {
+            // In production, use the manifest
+            var manifestKey = "resources/assets/#arguments.type#/#arguments.entryPoint#.#arguments.type#";
+
+            if ( structKeyExists( variables.manifest, manifestKey ) ) {
+                var entry = variables.manifest[ manifestKey ];
+
+                if ( arguments.type == "css" && structKeyExists( entry, "css" ) ) {
+                    // Return the CSS file from the manifest
+                    return "#variables.distPath#/#entry.css[1]#";
+                } else if ( arguments.type == "js" && structKeyExists( entry, "file" ) ) {
+                    // Return the JS file from the manifest
+                    return "#variables.distPath#/#entry.file#";
+                }
+            }
+
+            // Fallback for missing manifest entries
+            return "#variables.distPath#/#arguments.type#/#arguments.entryPoint#.#arguments.type#";
+        }
+    }
+
+    /**
+     * Generate script tags for Vite assets
+     *
+     * @entryPoint The entry point name
+     *
+     * @return HTML script tags
+     */
+    function scripts( required string entryPoint ) {
+        var html = "";
+
+        if ( variables.isDevelopment ) {
+            // In development, include the Vite client and the entry point
+            html &= '<script type="module" src="#variables.viteProtocol#://#variables.viteHost#/@vite/client"></script>';
+            html &= '<script type="module" src="#asset( arguments.entryPoint, 'js' )#"></script>';
+        } else {
+            // In production, include the built assets
+            var jsUrl = asset( arguments.entryPoint, "js" );
+            if ( len( jsUrl ) ) {
+                html &= '<script type="module" src="#jsUrl#"></script>';
+            }
+
+            // Include any additional imports from manifest
+            var manifestKey = "resources/assets/js/#arguments.entryPoint#.js";
+            if ( structKeyExists( variables.manifest, manifestKey ) ) {
+                var entry = variables.manifest[ manifestKey ];
+
+                // Include dynamic imports
+                if ( structKeyExists( entry, "dynamicImports" ) ) {
+                    for ( var importFile in entry.dynamicImports ) {
+                        html &= '<link rel="modulepreload" href="#variables.distPath#/#importFile#">';
+                    }
+                }
+
+                // Include imports
+                if ( structKeyExists( entry, "imports" ) ) {
+                    for ( var importFile in entry.imports ) {
+                        html &= '<link rel="modulepreload" href="#variables.distPath#/#importFile#">';
+                    }
+                }
+            }
+        }
+
+        return html;
+    }
+
+    /**
+     * Generate CSS link tags for Vite assets
+     *
+     * @entryPoint The entry point name
+     *
+     * @return HTML link tags
+     */
+    function styles( required string entryPoint ) {
+        var html = "";
+
+        if ( !variables.isDevelopment ) {
+            // In production, include CSS files
+            var cssUrl = asset( arguments.entryPoint, "css" );
+            if ( len( cssUrl ) ) {
+                html &= '<link rel="stylesheet" href="#cssUrl#">';
+            }
+
+            // Include additional CSS files from manifest
+            var manifestKey = "resources/assets/js/#arguments.entryPoint#.js";
+            if ( structKeyExists( variables.manifest, manifestKey ) ) {
+                var entry = variables.manifest[ manifestKey ];
+
+                if ( structKeyExists( entry, "css" ) ) {
+                    for ( var cssFile in entry.css ) {
+                        html &= '<link rel="stylesheet" href="#variables.distPath#/#cssFile#">';
+                    }
+                }
+            }
+
+            // Also check for direct CSS entry
+            var cssManifestKey = "resources/assets/scss/#arguments.entryPoint#.scss";
+            if ( structKeyExists( variables.manifest, cssManifestKey ) ) {
+                var cssEntry = variables.manifest[ cssManifestKey ];
+                if ( structKeyExists( cssEntry, "file" ) ) {
+                    html &= '<link rel="stylesheet" href="#variables.distPath#/#cssEntry.file#">';
+                }
+            }
+        }
+        // In development, CSS is injected by Vite
+
+        return html;
+    }
+
+    /**
+     * Check if we're running in development mode
+     *
+     * @return Boolean indicating if in development mode
+     */
+    function isDev() {
+        return variables.isDevelopment;
+    }
+
+    /**
+     * Get the Vite dev server URL
+     *
+     * @return The dev server URL
+     */
+    function devServerUrl() {
+        return "#variables.viteProtocol#://#variables.viteHost#";
+    }
+}

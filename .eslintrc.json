@@ -1,0 +1,48 @@
+{
+	"env": {
+		"browser": true,
+		"node": true,
+		"es2021": true
+	},
+	"extends": "eslint:recommended",
+	"parserOptions": {
+		"ecmaVersion": 2022,
+		"sourceType": "module"
+	},
+	"globals": {
+		"Alpine": "readonly"
+	},
+	"ignorePatterns": [
+		"dist/**",
+		"out/**",
+		"node_modules/**",
+		"boxlang_modules/**"
+	],
+	"rules": {
+		"space-in-parens": [
+			"error",
+			"always"
+		],
+		"space-infix-ops": "error",
+		"space-before-blocks": "error",
+		"space-before-function-paren": [
+			"error",
+			"always"
+		],
+		"space-unary-ops": [
+			"error",
+			{
+				"words": true,
+				"nonwords": false
+			}
+		],
+		"array-bracket-spacing": [
+			"error",
+			"always"
+		],
+		"object-curly-spacing": [
+			"error",
+			"always"
+		]
+	}
+}

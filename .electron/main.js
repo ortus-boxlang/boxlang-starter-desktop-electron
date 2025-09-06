@@ -349,10 +349,42 @@ function createTray () {
 function updateTrayMenu () {
     if ( !tray ) return;
 
-    const contextMenu = tray.getContextMenu();
-    if ( contextMenu && contextMenu.items[ 3 ] ) {
-        contextMenu.items[ 3 ].label = `Server Status: ${boxLangProcess && !boxLangProcess.killed ? 'Running' : 'Stopped'}`;
-    }
+    const isRunning = boxLangProcess && !boxLangProcess.killed;
+    const contextMenu = Menu.buildFromTemplate( [
+        {
+            label: 'Show Application',
+            click: () => {
+                if ( mainWindow ) {
+                    mainWindow.show();
+                    mainWindow.focus();
+                } else {
+                    createWindow();
+                }
+            }
+        },
+        {
+            label: 'Open in Browser',
+            click: () => shell.openExternal( `http://localhost:${serverPort}` )
+        },
+        { type: 'separator' },
+        {
+            label: `Server Status: ${isRunning ? 'Running' : 'Stopped'}`,
+            enabled: false
+        },
+        {
+            label: 'Restart Server',
+            click: () => restartBoxLang()
+        },
+        { type: 'separator' },
+        {
+            label: 'Quit',
+            click: () => {
+                appIsQuitting = true;
+                app.quit();
+            }
+        }
+    ] );
+    tray.setContextMenu( contextMenu );
 }
 
 /**

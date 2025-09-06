@@ -28,7 +28,7 @@ const isDevelopment = process.env.NODE_ENV === 'development';
  *  You can change these settings to customize the app as you see fit.
  */
 // The internal server port
-const serverPort = 59777;
+const serverPort = 59700;
 // Enable debug mode for the server (true/false)
 const serverDebugMode = true;
 // Window Defaults
@@ -426,11 +426,20 @@ function createWindow () {
 
 	// macOS-only: set the dock icon (must be .icns)
 	if ( process.platform === 'darwin' && app?.dock ) {
-		const dockIcon = resolveAsset( 'includes', 'icons', 'icon.icns' );
+		const dockIconIcns = resolveAsset( 'includes', 'icons', 'icon.icns' );
+		const dockIconPng = resolveAsset( 'includes', 'icons', 'icon_128x128.png' );
+
 		try {
-			app.dock.setIcon( dockIcon );
+			app.dock.setIcon( dockIconIcns );
 		} catch ( error ) {
-			console.warn( "Could not set dock icon:", error.message );
+			console.warn( "Could not set dock icon (.icns):", error.message );
+			// Fallback to PNG
+			try {
+				app.dock.setIcon( dockIconPng );
+				console.log( "Successfully set dock icon using PNG fallback" );
+			} catch ( pngError ) {
+				console.warn( "Could not set dock icon (PNG fallback):", pngError.message );
+			}
 		}
 	}
 

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BoxLang Electron Application</title>
+    <title>BoxLang Desktop Application</title>
 
     <bx:script>
         // Initialize Vite helper
@@ -86,7 +86,7 @@
         }
 
         function changeTheme() {
-            document.body.classList.toggle('gradient-bg');
+            document.body.classList.toggle( 'gradient-bg' );
         }
     </script>
 </body>

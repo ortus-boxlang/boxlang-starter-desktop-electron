@@ -5,26 +5,24 @@
 	"description": "A starter BoxLang application for building desktop applications with Electron",
 	"main": ".electron/main.js",
 	"scripts": {
-		"dev": "concurrently --kill-others \"npm run vite:dev\" \"npm run electron:delay\"",
-		"vite:dev": "vite",
-		"electron:delay": "sleep 3 && npm run electron:dev",
+		"dev": "concurrently --kill-others \"npm run dev:vite\" \"npm run electron:delay\"",
 		"dev:vite": "vite",
-		"build": "vite build",
-		"preview": "vite preview",
 		"dev:electron": "concurrently \"npm run dev:vite\" \"wait-on http://127.0.0.1:3000 && npm run electron\"",
+		"electron:delay": "sleep 3 && npm run electron:dev",
+		"build": "vite build",
+		"lint:fix": "eslint --ext .js,.ts . --fix",
+		"lint:check": "eslint --ext .js,.ts .",
 		"electron": "npx electron .electron/main.js",
 		"electron:dev": "cross-env NODE_ENV=development npx electron .electron/main.js",
 		"prod": "npm run build && npx electron .electron/main.js",
-		"start": "npm run electron:dev",
-		"test": "echo \"Error: no test specified\" && exit 1",
-		"package": "npm run build && electron-builder",
 		"make": "npm run build && electron-builder",
-		"lint:fix": "eslint --ext .js,.ts . --fix",
-		"lint:check": "eslint --ext .js,.ts ."
+		"package": "npm run build && electron-builder",
+		"preview": "vite preview",
+		"start": "npm run electron:dev"
 	},
 	"keywords": [],
-	"author": "",
-	"license": "ISC",
+	"author": "YOU",
+	"license": "Apache-2.0",
 	"devDependencies": {
 		"concurrently": "^8.2.2",
 		"cross-env": "^10.0.0",
@@ -39,12 +37,15 @@
 		"productName": "BoxLang Starter Desktop",
 		"appId": "io.boxlang.starter",
 		"mac": {
+			"icon": "includes/icon.icns",
 			"target": "dmg"
 		},
 		"win": {
+			"icon": "includes/icon.ico",
 			"target": "nsis"
 		},
 		"linux": {
+			"icon": "includes/icon.iconset/icon.png",
 			"target": "AppImage"
 		}
 	}

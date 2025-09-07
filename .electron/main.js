@@ -2,6 +2,11 @@ import { app, BrowserWindow, nativeImage, Menu, shell, dialog, Tray, globalShort
 import { spawn } from "child_process";
 import { fileURLToPath } from 'url';
 
+// Import our modular components
+import { TrayMenu } from './TrayMenu.js';
+import { AppMenu } from './AppMenu.js';
+import { Shortcuts } from './Shortcuts.js';
+
 // Dynamic imports
 const path = await import( "path" );
 process.env.PATH = process.env.PATH + ":/usr/local/bin";
@@ -17,6 +22,11 @@ const projectRoot = path.resolve( thisDirName, "../" );
 let boxLangProcess;
 let mainWindow;
 let tray;
+
+// Component instances
+let trayMenu;
+let appMenu;
+let shortcuts;
 
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -40,6 +50,11 @@ const loadingView =  path.join( projectRoot, "views/loading.html" );
 
 // Set app name early (before app is ready)
 app.setName( appName );
+
+// Initialize component instances
+trayMenu = new TrayMenu( { projectRoot, appName, serverPort } );
+appMenu = new AppMenu( { appName } );
+shortcuts = new Shortcuts( { serverPort } );
 
 /**
  * -----------------------------------------------------------
@@ -72,17 +87,44 @@ app.whenReady().then( () => {
       copyright: "© 2025 Ortus Solutions, Corp"
     });
   }
-  createAppMenu();
+
+  // Create application menu using modular component
+  appMenu.create( {
+    quit: handleQuit,
+    showOrCreateWindow: showOrCreateWindow,
+    reloadWindow: reloadWindow,
+    forceReloadWindow: forceReloadWindow,
+    restartBoxLang: restartBoxLang,
+    closeWindow: closeWindow,
+    toggleDevTools: toggleDevTools,
+    showAbout: showAboutDialog
+  } );
+
   createWindow();
-  createTray();
-  registerGlobalShortcuts();
+
+  // Create system tray using modular component
+  trayMenu.create( {
+    createWindow: createWindow,
+    restartBoxLang: restartBoxLang,
+    quit: handleQuit
+  } );
+
+  // Register global shortcuts using modular component
+  shortcuts.register( {
+    restartBoxLang: restartBoxLang
+  } );
+
   startBoxLang();
+
+  // Update component references after everything is created
+  updateComponentReferences();
 } );
 
  // Graceful shutdown of BoxLang process
 app.on( "before-quit", () => {
     appIsQuitting = true;
-    globalShortcut.unregisterAll();
+    shortcuts.unregister(); // Use modular shortcuts component
+    trayMenu.destroy(); // Use modular tray component
 	stopBoxLang(); // one place to stop the child
 } );
 
@@ -111,13 +153,89 @@ app.on?.( 'second-instance', () => {
 
 /**
  * -----------------------------------------------------------
+ * MENU CALLBACKS & UTILITY FUNCTIONS
+ * -----------------------------------------------------------
+ */
+
+/**
+ * Handle application quit
+ */
+function handleQuit() {
+    appIsQuitting = true;
+    app.quit();
+}
+
+/**
+ * Show or create window
+ */
+function showOrCreateWindow() {
+    if ( mainWindow ) {
+        mainWindow.show();
+        mainWindow.focus();
+    } else {
+        createWindow();
+    }
+}
+
+/**
+ * Reload window
+ */
+function reloadWindow() {
+    if ( mainWindow ) {
+        mainWindow.reload();
+    }
+}
+
+/**
+ * Force reload window
+ */
+function forceReloadWindow() {
+    if ( mainWindow ) {
+        mainWindow.webContents.reloadIgnoringCache();
+    }
+}
+
+/**
+ * Close window
+ */
+function closeWindow() {
+    mainWindow?.close();
+}
+
+/**
+ * Toggle developer tools
+ */
+function toggleDevTools() {
+    if ( mainWindow ) {
+        mainWindow.webContents.toggleDevTools();
+    }
+}
+
+/**
+ * Update references in all components
+ */
+function updateComponentReferences() {
+    trayMenu.setReferences( {
+        boxLangProcess,
+        mainWindow,
+        appIsQuitting
+    } );
+
+    shortcuts.setReferences( {
+        mainWindow
+    } );
+}
+
+/**
+ * -----------------------------------------------------------
  * HELPERS
  * -----------------------------------------------------------
  */
 
 /**
- * Register global shortcuts
+ * Register global shortcuts (DEPRECATED - now handled by Shortcuts module)
  */
+/*
 function registerGlobalShortcuts () {
     // Quick show/hide application
     globalShortcut.register( 'CommandOrControl+Shift+L', () => {
@@ -141,10 +259,12 @@ function registerGlobalShortcuts () {
         shell.openExternal( `http://localhost:${serverPort}` );
     } );
 }
+*/
 
 /**
- * Create the application menu
+ * Create the application menu (DEPRECATED - now handled by AppMenu module)
  */
+/*
 function createAppMenu () {
     const isMac = process.platform === 'darwin';
 
@@ -310,6 +430,7 @@ function createAppMenu () {
     const menu = Menu.buildFromTemplate( template );
     Menu.setApplicationMenu( menu );
 }
+*/
 
 /**
  * Stop the BoxLang mini server
@@ -326,11 +447,12 @@ function stopBoxLang ( signal = 'SIGTERM' ) {
 }
 
 /**
- * Create system tray
+ * Create system tray (DEPRECATED - now handled by TrayMenu module)
  */
+/*
 function createTray () {
     // Use a smaller icon for the tray (16x16 is typical)
-    const trayIcon = nativeImage.createFromPath( resolveAsset( 'includes', 'icons', 'icon_16x16.png' ) );
+    const trayIcon = nativeImage.createFromPath( resolveAsset( 'includes', 'icon.iconset', 'icon_16x16.png' ) );
 
     if ( trayIcon.isEmpty() ) {
         // Fallback if the specific tray icon doesn't exist
@@ -398,10 +520,12 @@ function createTray () {
         }
     } );
 }
+*/
 
 /**
- * Update tray context menu with current server status
+ * Update tray context menu with current server status (DEPRECATED - now handled by TrayMenu module)
  */
+/*
 function updateTrayMenu () {
     if ( !tray ) return;
 
@@ -442,6 +566,7 @@ function updateTrayMenu () {
     ] );
     tray.setContextMenu( contextMenu );
 }
+*/
 
 /**
  * Restart the BoxLang server
@@ -449,7 +574,11 @@ function updateTrayMenu () {
 function restartBoxLang () {
     console.log( "Restarting BoxLang server..." );
     stopBoxLang();
-    updateTrayMenu();
+    trayMenu.updateMenu( {
+        createWindow: createWindow,
+        restartBoxLang: restartBoxLang,
+        quit: handleQuit
+    } );
     setTimeout( () => {
         startBoxLang();
     }, 2000 );
@@ -481,7 +610,7 @@ function createWindow () {
 		// NOTE: icon is used on Windows/Linux. Prefer .ico on Windows, .png on Linux.
 		icon: process.platform === 'win32'
 		? resolveAsset( 'favicon.ico' )
-		: resolveAsset( 'includes', 'icons', 'icon_32x32.png' ),
+		: resolveAsset( 'includes', 'icon.iconset', 'icon_32x32.png' ),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -497,7 +626,7 @@ function createWindow () {
 	}
 
 	// Window's only icon, requires a nativeImage
-	const overlay = nativeImage.createFromPath( path.join( projectRoot, 'includes/icons/icon_32x32.png' ) );
+	const overlay = nativeImage.createFromPath( path.join( projectRoot, 'includes/icnset/icon_32x32.png' ) );
 	if ( !overlay.isEmpty() ) {
 		mainWindow.setOverlayIcon( overlay, appName );
 	}
@@ -505,7 +634,7 @@ function createWindow () {
 	// Windows-only: taskbar overlay icon (ideally 16x16 PNG)
 	if ( process.platform === 'win32' ) {
 		const overlayIcon = nativeImage.createFromPath(
-			resolveAsset( 'includes', 'overlay-16x16.png' )
+			resolveAsset( 'includes', 'icon.iconset', 'icon_16x16.png' )
 		);
 		if ( !overlayIcon.isEmpty() ) {
 			mainWindow.setOverlayIcon( overlayIcon, appName );
@@ -514,8 +643,8 @@ function createWindow () {
 
 	// macOS-only: set the dock icon (must be .icns)
 	if ( process.platform === 'darwin' && app?.dock ) {
-		const dockIconIcns = resolveAsset( 'includes', 'icons', 'icon.icns' );
-		const dockIconPng = resolveAsset( 'includes', 'icons', 'icon_128x128.png' );
+		const dockIconIcns = resolveAsset( 'includes', 'icon.icns' );
+		const dockIconPng = resolveAsset( 'includes', 'icon.iconset', 'icon_128x128.png' );
 
 		try {
 			app.dock.setIcon( dockIconIcns );
@@ -608,7 +737,11 @@ function startBoxLang () {
 
 	boxLangProcess.on( "close", ( code ) => {
 		console.log( `BoxLang process exited with code ${code}` );
-		updateTrayMenu();
+		trayMenu.updateMenu( {
+			createWindow: createWindow,
+			restartBoxLang: restartBoxLang,
+			quit: handleQuit
+		} );
 
 		// Auto-restart on unexpected exit (not during app shutdown)
 		if ( !appIsQuitting && code !== 0 ) {
@@ -634,7 +767,14 @@ function startBoxLang () {
 	boxLangProcess.stdout.on( 'data', checkServer );
 
 	// Update tray status
-	setTimeout( () => updateTrayMenu(), 1000 );
+	setTimeout( () => {
+		trayMenu.updateMenu( {
+			createWindow: createWindow,
+			restartBoxLang: restartBoxLang,
+			quit: handleQuit
+		} );
+		updateComponentReferences();
+	}, 1000 );
 }
 
 /**

@@ -1,0 +1,7 @@
+class{
+
+	function main( args = [] ){
+		var cliArgs = CLIGetArgs();
+	}
+
+}

@@ -4,8 +4,8 @@ import { globalShortcut, shell } from 'electron';
  * Shortcuts class - Manages global keyboard shortcuts
  */
 export class Shortcuts {
-    constructor( { serverPort } ) {
-        this.serverPort = serverPort;
+    constructor( globalSettings ) {
+        this.globalSettings = globalSettings;
         this.mainWindow = null;
     }
 
@@ -39,7 +39,7 @@ export class Shortcuts {
 
         // Open application in browser
         globalShortcut.register( 'CommandOrControl+Shift+O', () => {
-            shell.openExternal( `http://localhost:${this.serverPort}` );
+            shell.openExternal( `http://localhost:${this.globalSettings.serverPort}` );
         } );
     }
 

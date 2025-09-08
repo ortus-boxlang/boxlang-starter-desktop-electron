@@ -4,8 +4,8 @@ import { Menu, shell, dialog, app } from 'electron';
  * AppMenu class - Manages application menu functionality
  */
 export class AppMenu {
-    constructor( { appName } ) {
-        this.appName = appName;
+    constructor( globalSettings ) {
+        this.globalSettings = globalSettings;
     }
 
     /**

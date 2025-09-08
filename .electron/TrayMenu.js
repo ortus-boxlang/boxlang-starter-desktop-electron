@@ -5,12 +5,10 @@ import path from 'path';
  * TrayMenu class - Manages system tray functionality
  */
 export class TrayMenu {
-    constructor( { projectRoot, appName, serverPort } ) {
-        this.projectRoot = projectRoot;
-        this.appName = appName;
-        this.serverPort = serverPort;
+    constructor( globalSettings ) {
+        this.globalSettings = globalSettings;
         this.tray = null;
-        this.boxLangProcess = null;
+        this.boxLang = null;
         this.mainWindow = null;
         this.appIsQuitting = false;
     }
@@ -18,8 +16,8 @@ export class TrayMenu {
     /**
      * Set references to external components
      */
-    setReferences( { boxLangProcess, mainWindow, appIsQuitting } ) {
-        this.boxLangProcess = boxLangProcess;
+    setReferences( { boxLang, mainWindow, appIsQuitting } ) {
+        this.boxLang = boxLang;
         this.mainWindow = mainWindow;
         this.appIsQuitting = appIsQuitting;
     }
@@ -60,7 +58,7 @@ export class TrayMenu {
             },
             { type: 'separator' },
             {
-                label: `Server Status: ${this.boxLangProcess && !this.boxLangProcess.killed ? 'Running' : 'Stopped'}`,
+                label: `Server Status: ${this.boxLang && this.boxLang.isRunning() ? 'Running' : 'Stopped'}`,
                 enabled: false
             },
             {
@@ -70,7 +68,7 @@ export class TrayMenu {
             { type: 'separator' },
             {
                 label: 'Open in Browser',
-                click: () => shell.openExternal( `http://localhost:${this.serverPort}` )
+                click: () => shell.openExternal( `http://localhost:${this.globalSettings.serverPort}` )
             },
             { type: 'separator' },
             {
@@ -82,7 +80,7 @@ export class TrayMenu {
         ] );
 
         this.tray.setContextMenu( contextMenu );
-        this.tray.setToolTip( `${this.appName} - Port: ${this.serverPort}` );
+        this.tray.setToolTip( `${this.globalSettings.appName} - Port: ${this.globalSettings.serverPort}` );
 
         // Click to show/hide window
         this.tray.on( 'click', () => {
@@ -105,7 +103,7 @@ export class TrayMenu {
     updateMenu( callbacks = {} ) {
         if ( !this.tray ) return;
 
-        const isRunning = this.boxLangProcess && !this.boxLangProcess.killed;
+        const isRunning = this.boxLang && this.boxLang.isRunning();
         const contextMenu = Menu.buildFromTemplate( [
             {
                 label: 'Show Application',
@@ -120,7 +118,7 @@ export class TrayMenu {
             },
             {
                 label: 'Open in Browser',
-                click: () => shell.openExternal( `http://localhost:${this.serverPort}` )
+                click: () => shell.openExternal( `http://localhost:${this.globalSettings.serverPort}` )
             },
             { type: 'separator' },
             {
@@ -160,6 +158,6 @@ export class TrayMenu {
      * @returns {string} The resolved path
      */
     resolveAsset( ...p ) {
-        return path.join( this.projectRoot, ...p );
+        return this.globalSettings.path.join( this.globalSettings.projectRoot, ...p );
     }
 }

@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import { TrayMenu } from './TrayMenu.js';
 import { AppMenu } from './AppMenu.js';
 import { Shortcuts } from './Shortcuts.js';
+import { BoxLang } from './BoxLang.js';
 
 // Dynamic imports
 const path = await import( "path" );
@@ -19,14 +20,13 @@ const thisDirName = path.dirname( thisFileName );
 const projectRoot = path.resolve( thisDirName, "../" );
 
 // Global Variables
-let boxLangProcess;
 let mainWindow;
-let tray;
 
 // Component instances
 let trayMenu;
 let appMenu;
 let shortcuts;
+let boxLang;
 
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
@@ -37,24 +37,30 @@ const isDevelopment = process.env.NODE_ENV === 'development';
  * --------------------------------------------------------
  *  You can change these settings to customize the app as you see fit.
  */
-// The internal server port
-const serverPort = 59700;
-// Enable debug mode for the server (true/false)
-const serverDebugMode = true;
-// Window Defaults
-const appName = "BoxLang Starter Desktop";
-const windowHeight = 800;
-const windowWidth = 1200;
-// The loading view path
-const loadingView =  path.join( projectRoot, "views/loading.html" );
+const globalSettings = {
+    // The internal server port
+    serverPort: 59700,
+    // Enable debug mode for the server (true/false)
+    serverDebugMode: true,
+    // Window Defaults
+    appName: "BoxLang Starter Desktop",
+    windowHeight: 800,
+    windowWidth: 1200,
+    // Project paths
+    projectRoot,
+    path,
+    // The loading view path
+    loadingView: path.join( projectRoot, "views/loading.html" )
+};
 
 // Set app name early (before app is ready)
-app.setName( appName );
+app.setName( globalSettings.appName );
 
 // Initialize component instances
-trayMenu = new TrayMenu( { projectRoot, appName, serverPort } );
-appMenu = new AppMenu( { appName } );
-shortcuts = new Shortcuts( { serverPort } );
+trayMenu = new TrayMenu( globalSettings );
+appMenu = new AppMenu( globalSettings );
+shortcuts = new Shortcuts( globalSettings );
+boxLang = new BoxLang( globalSettings );
 
 /**
  * -----------------------------------------------------------
@@ -69,20 +75,20 @@ if ( !gotLock ) {
 let appIsQuitting = false;
 
 /** extra safety for dev exits (Ctrl+C / kill) */
-process.on( 'SIGINT', () => { stopBoxLang(); app.quit(); } );
-process.on( 'SIGTERM', () => { stopBoxLang(); app.quit(); } );
+process.on( 'SIGINT', () => { boxLang.stop(); app.quit(); } );
+process.on( 'SIGTERM', () => { boxLang.stop(); app.quit(); } );
 
 /**
  * Create the main application window once Electron is ready
  */
 app.whenReady().then( () => {
   // Ensure app name is set (sometimes needed for development)
-  app.setName( appName );
+  app.setName( globalSettings.appName );
 
   // Set about panel options (helps with app name on macOS)
   if (process.platform === 'darwin') {
     app.setAboutPanelOptions({
-      applicationName: appName,
+      applicationName: globalSettings.appName,
       applicationVersion: "1.0.0",
       copyright: "© 2025 Ortus Solutions, Corp"
     });
@@ -94,7 +100,7 @@ app.whenReady().then( () => {
     showOrCreateWindow: showOrCreateWindow,
     reloadWindow: reloadWindow,
     forceReloadWindow: forceReloadWindow,
-    restartBoxLang: restartBoxLang,
+    restartBoxLang: () => boxLang.restart(),
     closeWindow: closeWindow,
     toggleDevTools: toggleDevTools,
     showAbout: showAboutDialog
@@ -105,16 +111,16 @@ app.whenReady().then( () => {
   // Create system tray using modular component
   trayMenu.create( {
     createWindow: createWindow,
-    restartBoxLang: restartBoxLang,
+    restartBoxLang: () => boxLang.restart(),
     quit: handleQuit
   } );
 
   // Register global shortcuts using modular component
   shortcuts.register( {
-    restartBoxLang: restartBoxLang
+    restartBoxLang: () => boxLang.restart()
   } );
 
-  startBoxLang();
+  boxLang.start();
 
   // Update component references after everything is created
   updateComponentReferences();
@@ -123,9 +129,10 @@ app.whenReady().then( () => {
  // Graceful shutdown of BoxLang process
 app.on( "before-quit", () => {
     appIsQuitting = true;
+    boxLang.setQuitting( true );
     shortcuts.unregister(); // Use modular shortcuts component
     trayMenu.destroy(); // Use modular tray component
-	stopBoxLang(); // one place to stop the child
+	boxLang.stop(); // Use modular BoxLang component
 } );
 
 // Quit when all windows are closed (except on macOS)
@@ -139,8 +146,8 @@ app.on( 'window-all-closed', () => {
 app.on( 'activate', () => {
     if ( BrowserWindow.getAllWindows().length === 0 ) {
         createWindow();
-        if ( !boxLangProcess || boxLangProcess.killed ) {
-            startBoxLang();
+        if ( !boxLang.isRunning() ) {
+            boxLang.start();
         }
     }
 } );
@@ -215,14 +222,27 @@ function toggleDevTools() {
  * Update references in all components
  */
 function updateComponentReferences() {
+    const updateTrayCallback = () => {
+        trayMenu.updateMenu( {
+            createWindow: createWindow,
+            restartBoxLang: () => boxLang.restart(),
+            quit: handleQuit
+        } );
+    };
+
     trayMenu.setReferences( {
-        boxLangProcess,
+        boxLang: boxLang,
         mainWindow,
         appIsQuitting
     } );
 
     shortcuts.setReferences( {
         mainWindow
+    } );
+
+    boxLang.setReferences( {
+        mainWindow,
+        updateCallback: updateTrayCallback
     } );
 }
 
@@ -233,368 +253,17 @@ function updateComponentReferences() {
  */
 
 /**
- * Register global shortcuts (DEPRECATED - now handled by Shortcuts module)
- */
-/*
-function registerGlobalShortcuts () {
-    // Quick show/hide application
-    globalShortcut.register( 'CommandOrControl+Shift+L', () => {
-        if ( mainWindow ) {
-            if ( mainWindow.isVisible() && mainWindow.isFocused() ) {
-                mainWindow.hide();
-            } else {
-                mainWindow.show();
-                mainWindow.focus();
-            }
-        }
-    } );
-
-    // Quick restart BoxLang server
-    globalShortcut.register( 'CommandOrControl+Shift+R', () => {
-        restartBoxLang();
-    } );
-
-    // Open application in browser
-    globalShortcut.register( 'CommandOrControl+Shift+O', () => {
-        shell.openExternal( `http://localhost:${serverPort}` );
-    } );
-}
-*/
-
-/**
- * Create the application menu (DEPRECATED - now handled by AppMenu module)
- */
-/*
-function createAppMenu () {
-    const isMac = process.platform === 'darwin';
-
-    const template = [
-        // macOS app menu (first menu)
-        ...(isMac ? [{
-            label: app.getName(),
-            submenu: [
-                { role: 'about' },
-                { type: 'separator' },
-                { role: 'services' },
-                { type: 'separator' },
-                { role: 'hide' },
-                { role: 'hideothers' },
-                { role: 'unhide' },
-                { type: 'separator' },
-                {
-                    label: 'Quit ' + app.getName(),
-                    accelerator: 'Cmd+Q',
-                    click: () => {
-                        appIsQuitting = true;
-                        app.quit();
-                    }
-                }
-            ]
-        }] : []),
-        {
-            label: 'File',
-            submenu: [
-                {
-                    label: 'New Window',
-                    accelerator: 'CmdOrCtrl+N',
-                    click: () => {
-                        if ( mainWindow ) {
-                            mainWindow.show();
-                            mainWindow.focus();
-                        } else {
-                            createWindow();
-                        }
-                    }
-                },
-                { type: 'separator' },
-                {
-                    label: 'Reload',
-                    accelerator: 'CmdOrCtrl+R',
-                    click: () => {
-                        if ( mainWindow ) {
-                            mainWindow.reload();
-                        }
-                    }
-                },
-                {
-                    label: 'Force Reload',
-                    accelerator: 'CmdOrCtrl+Shift+R',
-                    click: () => {
-                        if ( mainWindow ) {
-                            mainWindow.webContents.reloadIgnoringCache();
-                        }
-                    }
-                },
-                { type: 'separator' },
-                {
-                    label: 'Restart BoxLang Server',
-                    accelerator: 'CmdOrCtrl+Shift+B',
-                    click: () => restartBoxLang()
-                },
-                { type: 'separator' },
-                // On non-Mac, put Quit in File menu
-                ...(!isMac ? [{
-                    label: 'Quit',
-                    accelerator: 'Ctrl+Q',
-                    click: () => {
-                        appIsQuitting = true;
-                        app.quit();
-                    }
-                }] : [{
-                    label: 'Close Window',
-                    accelerator: 'Cmd+W',
-                    click: () => mainWindow?.close()
-                }])
-            ]
-        },
-        {
-            label: 'Edit',
-            submenu: [
-                { role: 'undo' },
-                { role: 'redo' },
-                { type: 'separator' },
-                { role: 'cut' },
-                { role: 'copy' },
-                { role: 'paste' },
-                { role: 'selectall' }
-            ]
-        },
-        {
-            label: 'View',
-            submenu: [
-                { role: 'resetzoom' },
-                { role: 'zoomin' },
-                { role: 'zoomout' },
-                { type: 'separator' },
-                { role: 'togglefullscreen' },
-                {
-                    label: 'Toggle Developer Tools',
-                    accelerator: process.platform === 'darwin' ? 'Alt+Cmd+I' : 'Ctrl+Shift+I',
-                    click: () => {
-                        if ( mainWindow ) {
-                            mainWindow.webContents.toggleDevTools();
-                        }
-                    }
-                }
-            ]
-        },
-        {
-            label: 'Window',
-            submenu: [
-                { role: 'minimize' },
-                ...( process.platform === 'darwin' ? [
-                    { role: 'close' },
-                    { role: 'zoom' },
-                    { type: 'separator' },
-                    { role: 'front' }
-                ] : [
-                    { role: 'close' }
-                ] )
-            ]
-        },
-        {
-            label: 'Help',
-            submenu: [
-                {
-                    label: 'About' + app.getName(),
-                    click: () => showAboutDialog()
-                },
-				{
-					label: "BoxLang Website",
-					click: () => shell.openExternal( 'https://www.boxlang.io' )
-				},
-                {
-                    label: 'BoxLang Documentation',
-                    click: () => shell.openExternal( 'https://boxlang.ortusbooks.com' )
-                },
-				{
-                    label: 'BoxLang Support',
-                    click: () => shell.openExternal( 'https://www.boxlang.io/plans' )
-                },
-				{
-                    label: 'BoxLang Slack',
-                    click: () => shell.openExternal( 'https://boxteam.ortussolutions.com' )
-                },
-				{
-                    label: 'BoxLang Community',
-                    click: () => shell.openExternal( 'https://community.ortussolutions.com' )
-                },
-                {
-                    label: 'Report Issue',
-                    click: () => shell.openExternal( 'https://github.com/ortus-boxlang/boxlang/issues' )
-                }
-            ]
-        }
-    ];
-
-    const menu = Menu.buildFromTemplate( template );
-    Menu.setApplicationMenu( menu );
-}
-*/
-
-/**
- * Stop the BoxLang mini server
- *
- * @param {*} signal The signal to send (default: SIGTERM)
- */
-function stopBoxLang ( signal = 'SIGTERM' ) {
-  if (  boxLangProcess && !boxLangProcess.killed ) {
-	try { boxLangProcess.kill( signal ); }
-	catch {
-		console.warn( "BoxLang process already killed." );
-	}
-  }
-}
-
-/**
- * Create system tray (DEPRECATED - now handled by TrayMenu module)
- */
-/*
-function createTray () {
-    // Use a smaller icon for the tray (16x16 is typical)
-    const trayIcon = nativeImage.createFromPath( resolveAsset( 'includes', 'icon.iconset', 'icon_16x16.png' ) );
-
-    if ( trayIcon.isEmpty() ) {
-        // Fallback if the specific tray icon doesn't exist
-        return;
-    }
-
-    tray = new Tray( trayIcon );
-
-    const contextMenu = Menu.buildFromTemplate( [
-        {
-            label: 'Show Application',
-            click: () => {
-                if ( mainWindow ) {
-                    mainWindow.show();
-                    mainWindow.focus();
-                } else {
-                    createWindow();
-                }
-            }
-        },
-        {
-            label: 'Hide Application',
-            click: () => {
-                if ( mainWindow ) {
-                    mainWindow.hide();
-                }
-            }
-        },
-        { type: 'separator' },
-        {
-            label: `Server Status: ${boxLangProcess && !boxLangProcess.killed ? 'Running' : 'Stopped'}`,
-            enabled: false
-        },
-        {
-            label: 'Restart BoxLang Server',
-            click: () => restartBoxLang()
-        },
-        { type: 'separator' },
-        {
-            label: 'Open in Browser',
-            click: () => shell.openExternal( `http://localhost:${serverPort}` )
-        },
-        { type: 'separator' },
-        {
-            label: 'Quit',
-            click: () => {
-                appIsQuitting = true;
-                app.quit();
-            }
-        }
-    ] );
-
-    tray.setContextMenu( contextMenu );
-    tray.setToolTip( `${appName} - Port: ${serverPort}` );
-
-    // Click to show/hide window
-    tray.on( 'click', () => {
-        if ( mainWindow ) {
-            if ( mainWindow.isVisible() && mainWindow.isFocused() ) {
-                mainWindow.hide();
-            } else {
-                mainWindow.show();
-                mainWindow.focus();
-            }
-        }
-    } );
-}
-*/
-
-/**
- * Update tray context menu with current server status (DEPRECATED - now handled by TrayMenu module)
- */
-/*
-function updateTrayMenu () {
-    if ( !tray ) return;
-
-    const isRunning = boxLangProcess && !boxLangProcess.killed;
-    const contextMenu = Menu.buildFromTemplate( [
-        {
-            label: 'Show Application',
-            click: () => {
-                if ( mainWindow ) {
-                    mainWindow.show();
-                    mainWindow.focus();
-                } else {
-                    createWindow();
-                }
-            }
-        },
-        {
-            label: 'Open in Browser',
-            click: () => shell.openExternal( `http://localhost:${serverPort}` )
-        },
-        { type: 'separator' },
-        {
-            label: `Server Status: ${isRunning ? 'Running' : 'Stopped'}`,
-            enabled: false
-        },
-        {
-            label: 'Restart Server',
-            click: () => restartBoxLang()
-        },
-        { type: 'separator' },
-        {
-            label: 'Quit',
-            click: () => {
-                appIsQuitting = true;
-                app.quit();
-            }
-        }
-    ] );
-    tray.setContextMenu( contextMenu );
-}
-*/
-
-/**
- * Restart the BoxLang server
- */
-function restartBoxLang () {
-    console.log( "Restarting BoxLang server..." );
-    stopBoxLang();
-    trayMenu.updateMenu( {
-        createWindow: createWindow,
-        restartBoxLang: restartBoxLang,
-        quit: handleQuit
-    } );
-    setTimeout( () => {
-        startBoxLang();
-    }, 2000 );
-}
-
-/**
  * Show about dialog
  */
 function showAboutDialog () {
-    dialog.showMessageBox( mainWindow, {
-        type: 'info',
-        title: 'About ' + appName,
-        message: appName,
-        detail: `Version: 1.0.0\n${appName}\nBuilt with Electron and Vite\n\nServer Port: ${serverPort}\nDebug Mode: ${serverDebugMode ? 'Enabled' : 'Disabled'}`,
-        buttons: [ 'OK' ]
-    } );
+	dialog.showMessageBox( mainWindow, {
+		type: 'info',
+		title: 'About ' + globalSettings.appName,
+		message: globalSettings.appName,
+		detail: `Version: 1.0.0\n${globalSettings.appName}\nBuilt with Electron and Vite\n\nServer Port: ${globalSettings.serverPort}\nDebug Mode: ${globalSettings.serverDebugMode ? 'Enabled' : 'Disabled'}`,
+		buttons: [ 'OK' ],
+		icon: nativeImage.createFromPath( resolveAsset( 'includes', 'icon.iconset', 'icon_64x64.png' ) )
+	} );
 }
 
 /**
@@ -602,9 +271,9 @@ function showAboutDialog () {
  */
 function createWindow () {
     mainWindow = new BrowserWindow( {
-        width: windowWidth,
-        height: windowHeight,
-		title: appName,
+        width: globalSettings.windowWidth,
+        height: globalSettings.windowHeight,
+		title: globalSettings.appName,
 		// Show window when ready in production, immediately in development
 		show: isDevelopment,
 		// NOTE: icon is used on Windows/Linux. Prefer .ico on Windows, .png on Linux.
@@ -625,9 +294,9 @@ function createWindow () {
 	}
 
 	// Window's only icon, requires a nativeImage
-	const overlay = nativeImage.createFromPath( path.join( projectRoot, 'includes/icnset/icon_32x32.png' ) );
+	const overlay = nativeImage.createFromPath( globalSettings.path.join( globalSettings.projectRoot, 'includes/icnset/icon_32x32.png' ) );
 	if ( !overlay.isEmpty() ) {
-		mainWindow.setOverlayIcon( overlay, appName );
+		mainWindow.setOverlayIcon( overlay, globalSettings.appName );
 	}
 
 	// Windows-only: taskbar overlay icon (ideally 16x16 PNG)
@@ -636,7 +305,7 @@ function createWindow () {
 			resolveAsset( 'includes', 'icon.iconset', 'icon_16x16.png' )
 		);
 		if ( !overlayIcon.isEmpty() ) {
-			mainWindow.setOverlayIcon( overlayIcon, appName );
+			mainWindow.setOverlayIcon( overlayIcon, globalSettings.appName );
 		}
 	}
 
@@ -660,7 +329,7 @@ function createWindow () {
 	}
 
 	// Load the loading view first
-    mainWindow.loadFile( loadingView );
+    mainWindow.loadFile( globalSettings.loadingView );
 
 	// Show window when ready (for production)
 	mainWindow.once( 'ready-to-show', () => {
@@ -679,131 +348,6 @@ function createWindow () {
 }
 
 /**
- * Startup the BoxLang mini server
- */
-function startBoxLang () {
-	console.log( "Starting BoxLang mini server..." );
-
-	// Check if server is already running
-	if ( boxLangProcess && !boxLangProcess.killed ) {
-		console.log( "BoxLang server is already running" );
-		return;
-	}
-
-	// Start up the boxlang mini server
-	boxLangProcess = spawn(
-		// Command
-		"boxlang-miniserver",
-		// Command Arguments
-		[
-			// Port
-			"-p",
-			serverPort.toString(),
-			// If serverDebugMode = true, then add --debug, else nothing
-			serverDebugMode ? "--debug" : "",
-			// Enable Rewrites
-			"--rewrites",
-			// Bind locally only, this is a desktop app
-			"--host",
-			"127.0.0.1",
-			// Webroot
-			"-w",
-			projectRoot,
-			// BoxLang Custom Home
-			"--serverHome",
-			path.join( projectRoot, ".boxlang" )
-		].filter( Boolean ), // Remove empty strings
-		// Spawn Options
-		// See https://nodejs.org/api/child_process.html#child_processspawncommand-args-options
-		{
-			cwd: projectRoot,
-			detached: false,
-			shell: false,
-			windowsHide: true,
-			env: process.env
-		}
-	);
-
-	boxLangProcess.stderr.on( "data", ( data ) => {
-		console.error( `BoxLang Error: ${data}` );
-		// Show error notification
-		if ( mainWindow && !mainWindow.isDestroyed() ) {
-			mainWindow.webContents.executeJavaScript(
-				`console.error('BoxLang Server Error: ${data.toString().replace( /'/g, "\\'" )}')`
-			);
-		}
-	} );
-
-	boxLangProcess.on( "close", ( code ) => {
-		console.log( `BoxLang process exited with code ${code}` );
-		trayMenu.updateMenu( {
-			createWindow: createWindow,
-			restartBoxLang: restartBoxLang,
-			quit: handleQuit
-		} );
-
-		// Auto-restart on unexpected exit (not during app shutdown)
-		if ( !appIsQuitting && code !== 0 ) {
-			console.log( "BoxLang server crashed, attempting restart in 5 seconds..." );
-			setTimeout( () => {
-				if ( !appIsQuitting ) {
-					startBoxLang();
-				}
-			}, 5000 );
-		}
-	} );
-
-	boxLangProcess.on( "error", ( error ) => {
-		console.error( "Failed to start BoxLang server:", error );
-
-		// Show error dialog
-		dialog.showErrorBox(
-			"Server Startup Error",
-			`Failed to start BoxLang server: ${error.message}\n\nPlease ensure BoxLang MiniServer is installed and in your PATH.`
-		);
-	} );
-
-	boxLangProcess.stdout.on( 'data', checkServer );
-
-	// Update tray status
-	setTimeout( () => {
-		trayMenu.updateMenu( {
-			createWindow: createWindow,
-			restartBoxLang: restartBoxLang,
-			quit: handleQuit
-		} );
-		updateComponentReferences();
-	}, 1000 );
-}
-
-/**
- * Check the status of the BoxLang server
- *
- * @param {*} message The message from the server
- */
-function checkServer ( message ) {
-    if ( message.toString().includes( "BoxLang MiniServer started" ) ) {
-        let loadPage = () => {
-            mainWindow.loadURL( "http://localhost:" + serverPort + "/" );
-        }
-        setTimeout( () => {
-            loadPage();
-        }, 1000 );
-        mainWindow.webContents.on( "did-finish-load", () => {
-            console.log( "Page loaded successfully." );
-        } );
-        mainWindow.webContents.on( "did-fail-load", () => {
-            setTimeout( () => {
-                loadPage();
-                console.log( "Retrying to load the page..." );
-            }, 1000 );
-        } );
-
-        boxLangProcess.stdout.removeListener( "data", checkServer );
-    }
-}
-
-/**
  *  Resolve the path to an asset
  *
  * @param  {...any} p Path parts to the asset
@@ -811,5 +355,5 @@ function checkServer ( message ) {
  * @returns {string} The resolved path
  */
 function resolveAsset ( ...p ) {
-  return path.join( projectRoot, ...p );
+  return globalSettings.path.join( globalSettings.projectRoot, ...p );
 }

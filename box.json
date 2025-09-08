@@ -1,38 +1,32 @@
 {
-    "name":"My BoxLang App",
-    "version":"1.0.0",
-    "author":"You",
-    "location":"forgeboxStorage",
-    "slug":"my-boxlang-app",
-    "createPackageDirectory":false,
-    "type":"projects",
-    "keywords":"",
-    "homepage":"",
-    "documentation":"",
-    "repository":{
-        "type":"",
-        "url":""
-    },
-    "bugs":"",
-    "shortDescription":"",
-    "contributors":[],
-    "ignore":[],
-    "devDependencies":{
-        "testbox":"*",
-        "commandbox-cfformat":"*"
-    },
-    "installPaths":{
-    },
-    "dependencies":{
-    },
-    "scripts":{
-        "postInstall":"pathExists .env || cp .env.example .env && package set ignore=[]",
-        "docker:build":"!docker build --no-cache -t my-coldbox-app -f ./build/Dockerfile ./",
-        "docker:run":"!docker run -it -p 8080:8080 my-coldbox-app",
-        "docker:bash":"!docker run -it my-coldbox-app /bin/bash",
-        "docker:stack":"!docker compose -f build/docker-compose.yaml ${1}"
-    },
-    "testbox":{
-        "runner":"http://localhost:8080/tests/runner.cfm"
-    }
+	"name": "My BoxLang Desktop App",
+	"version": "1.0.0",
+	"author": "You",
+	"location": "forgeboxStorage",
+	"slug": "my-boxlang-app",
+	"createPackageDirectory": false,
+	"type": "projects",
+	"keywords": "",
+	"homepage": "",
+	"documentation": "",
+	"repository": {
+		"type": "",
+		"url": ""
+	},
+	"bugs": "",
+	"shortDescription": "",
+	"contributors": [],
+	"ignore": [],
+	"devDependencies": {
+		"testbox": "*",
+		"commandbox-cfformat": "*"
+	},
+	"installPaths": {},
+	"dependencies": {},
+	"scripts": {
+		"postInstall": "pathExists .env || cp .env.example .env && package set ignore=[]"
+	},
+	"testbox": {
+		"runner": "http://localhost:8080/tests/runner.cfm"
+	}
 }

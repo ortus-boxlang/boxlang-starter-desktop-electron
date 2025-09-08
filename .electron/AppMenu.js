@@ -162,7 +162,7 @@ export class AppMenu {
 
         const menu = Menu.buildFromTemplate( template );
         Menu.setApplicationMenu( menu );
-        
+
         return menu;
     }
 }

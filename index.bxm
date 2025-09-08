@@ -27,17 +27,6 @@
                 </div>
 
                 <div class="mt-4">
-                    <h3>Icons Demo (Rounded)</h3>
-                    <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
-                        <img src="includes/icons/icon_32x32.png" alt="32x32 Icon" class="icon" width="32" height="32">
-                        <img src="includes/icons/icon_128x128.png" alt="128x128 Icon" class="icon" width="64" height="64">
-                        <img src="includes/icons/icon_128x128.png" alt="128x128 Icon" class="icon" width="128" height="128">
-                        <img src="includes/icons/icon_128x128.png" alt="Avatar Style" class="icon-avatar" width="64" height="64">
-                    </div>
-                    <p><small>Icons are automatically rounded with hover effects</small></p>
-                </div>
-
-                <div class="mt-4">
                     <h3>Environment Info</h3>
                     <p><strong>Development Mode:</strong> <bx:output>#application.viteHelper.isDev() ? 'Yes' : 'No'#</bx:output></p>
                     <p><strong>Current Time:</strong> <bx:output>#now()#</bx:output></p>

@@ -1,6 +1,9 @@
 // Import styles
 import '../scss/app.scss';
 
+// Import Alpine.js
+import Alpine from 'alpinejs';
+
 // Import Alpine.js store
 import ModalStore from "./stores/modal-store.js";
 
@@ -8,6 +11,10 @@ import ModalStore from "./stores/modal-store.js";
 document.addEventListener( "alpine:init", () => {
     Alpine.store( "modal", ModalStore );
 } );
+
+// Start Alpine.js
+window.Alpine = Alpine;
+Alpine.start();
 
 // Application initialization
 document.addEventListener( "DOMContentLoaded", () => {

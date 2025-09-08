@@ -17,6 +17,9 @@
 	"keywords": [],
 	"author": "YOU",
 	"license": "Apache-2.0",
+	"dependencies": {
+		"alpinejs": "^3.14.0"
+	},
 	"devDependencies": {
 		"concurrently": "^8.2.2",
 		"cross-env": "^10.0.0",
@@ -30,6 +33,16 @@
 	"build": {
 		"productName": "BoxLang Starter Desktop",
 		"appId": "io.boxlang.starter",
+		"directories": {
+			"output": "dist/electron"
+		},
+		"files": [
+			"**/*",
+			"!**/node_modules/**",
+			"!dist/electron/**",
+			"!resources/assets/**",
+			"resources/dist/**"
+		],
 		"mac": {
 			"icon": "includes/icon.icns",
 			"target": "dmg"

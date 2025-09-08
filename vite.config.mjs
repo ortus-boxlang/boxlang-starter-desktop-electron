@@ -10,8 +10,8 @@ export default defineConfig( {
 
     // Entry points for your assets
     build: {
-        // Output directory for built assets
-        outDir: 'dist',
+        // Output directory for built assets (separate from electron-builder)
+        outDir: 'includes/resources/',
 
         // Clear the output directory before each build
         emptyOutDir: true,
@@ -66,7 +66,7 @@ export default defineConfig( {
             allow: [
                 // Allow serving files from these directories
                 resolve( __dirname, 'resources' ),
-                resolve( __dirname, 'dist' ),
+                resolve( __dirname, 'resources/dist' ),
                 resolve( __dirname, '.' )
             ]
         }

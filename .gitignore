@@ -36,6 +36,7 @@ dist/**
 # Vite specific
 .vite/
 out/
+includes/resources/**
 
 # Electron build artifacts
 *.app

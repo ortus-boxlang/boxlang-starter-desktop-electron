@@ -13,8 +13,8 @@ class {
         variables.isDevelopment = ( getSystemSetting( "ENVIRONMENT", "development" ) == "development" );
         variables.viteHost = getSystemSetting( "VITE_HOST", "127.0.0.1:3000" );
         variables.viteProtocol = getSystemSetting( "VITE_PROTOCOL", "http" );
-        variables.manifestPath = expandPath( "./dist/.vite/manifest.json" );
-        variables.distPath = "/dist";
+        variables.manifestPath = expandPath( "./includes/resources/.vite/manifest.json" );
+        variables.distPath = "/includes/resources/";
 
         // Load manifest in production
         if ( !variables.isDevelopment && fileExists( variables.manifestPath ) ) {

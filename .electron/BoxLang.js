@@ -1,5 +1,6 @@
 import { spawn } from "child_process";
 import { dialog } from "electron";
+import { existsSync } from "fs";
 
 /**
  * BoxLang Server Management Module
@@ -14,9 +15,10 @@ export class BoxLang {
         // References that will be set later
         this.mainWindow = null;
         this.updateCallback = null;
-    }
 
-    /**
+        // Determine the miniserver command to use
+        this.miniserverCommand = this.detectMiniServerCommand();
+    }    /**
      * Set external references
      * @param {Object} refs - Object containing mainWindow and other references
      */
@@ -31,6 +33,38 @@ export class BoxLang {
      */
     setQuitting( quitting ) {
         this.isQuitting = quitting;
+    }
+
+    /**
+     * Detect which miniserver command to use
+     * @returns {Object} Command info with path and type
+     */
+    detectMiniServerCommand() {
+        const { projectRoot, path } = this.globalSettings;
+
+        // Check for packaged miniserver first
+        const packagedBinPath = path.join( projectRoot, '.miniserver', 'bin' );
+        const packagedCommand = process.platform === 'win32'
+            ? path.join( packagedBinPath, 'boxlang-miniserver.bat' )
+            : path.join( packagedBinPath, 'boxlang-miniserver' );
+
+        if ( existsSync( packagedCommand ) ) {
+            console.log( `✅ Using packaged BoxLang MiniServer: ${packagedCommand}` );
+            return {
+                command: packagedCommand,
+                type: 'packaged',
+                path: packagedBinPath
+            };
+        }
+
+        // Fallback to global installation
+        console.log( `⚠️  No packaged miniserver found, using global 'boxlang-miniserver' command` );
+        console.log( `   To package miniserver, run: boxlang .miniserver/Package.bx` );
+        return {
+            command: 'boxlang-miniserver',
+            type: 'global',
+            path: null
+        };
     }
 
     /**
@@ -54,6 +88,7 @@ export class BoxLang {
      */
     start() {
         console.log( "Starting BoxLang mini server..." );
+        console.log( `Using ${this.miniserverCommand.type} miniserver: ${this.miniserverCommand.command}` );
 
         // Check if server is already running
         if ( this.isRunning() ) {
@@ -61,13 +96,36 @@ export class BoxLang {
             return;
         }
 
-        const { projectRoot, serverPort, serverDebugMode } = this.globalSettings;
-        const path = this.globalSettings.path;
+        const { projectRoot, serverPort, serverDebugMode, path } = this.globalSettings;
+
+        // Prepare spawn options
+        const spawnOptions = {
+            cwd: projectRoot,
+            detached: false,
+            shell: false,
+            windowsHide: true,
+            env: { ...process.env }
+        };
+
+        // For packaged miniserver, we need to set up the environment
+        if ( this.miniserverCommand.type === 'packaged' ) {
+            const libPath = path.join( projectRoot, '.miniserver', 'lib' );
+
+            // Add lib directory to classpath/library path
+            if ( process.platform === 'win32' ) {
+                spawnOptions.env.PATH = `${this.miniserverCommand.path};${spawnOptions.env.PATH || ''}`;
+            } else {
+                spawnOptions.env.PATH = `${this.miniserverCommand.path}:${spawnOptions.env.PATH || ''}`;
+                // For Unix systems, also set library path
+                spawnOptions.env.LD_LIBRARY_PATH = `${libPath}:${spawnOptions.env.LD_LIBRARY_PATH || ''}`;
+                spawnOptions.env.DYLD_LIBRARY_PATH = `${libPath}:${spawnOptions.env.DYLD_LIBRARY_PATH || ''}`;
+            }
+        }
 
         // Start up the boxlang mini server
         this.process = spawn(
             // Command
-            "boxlang-miniserver",
+            this.miniserverCommand.command,
             // Command Arguments
             [
                 // Port
@@ -88,13 +146,7 @@ export class BoxLang {
                 path.join( projectRoot, ".boxlang" )
             ].filter( Boolean ), // Remove empty strings
             // Spawn Options
-            {
-                cwd: projectRoot,
-                detached: false,
-                shell: false,
-                windowsHide: true,
-                env: process.env
-            }
+            spawnOptions
         );
 
         // Handle stderr
@@ -132,10 +184,25 @@ export class BoxLang {
         this.process.on( "error", ( error ) => {
             console.error( "Failed to start BoxLang server:", error );
 
+            let errorMessage = `Failed to start BoxLang server: ${error.message}\n\n`;
+
+            if ( this.miniserverCommand.type === 'global' ) {
+                errorMessage += `Using global BoxLang MiniServer command: ${this.miniserverCommand.command}\n\n`;
+                errorMessage += `Solutions:\n`;
+                errorMessage += `1. Install BoxLang globally or ensure it's in your PATH\n`;
+                errorMessage += `2. Package miniserver locally by running: boxlang .miniserver/Package.bx\n`;
+                errorMessage += `3. Or download manually and run the packager`;
+            } else {
+                errorMessage += `Using packaged BoxLang MiniServer: ${this.miniserverCommand.command}\n\n`;
+                errorMessage += `The packaged miniserver may be corrupted. Try:\n`;
+                errorMessage += `1. Re-run: boxlang .miniserver/Package.bx --force\n`;
+                errorMessage += `2. Check file permissions on the executable`;
+            }
+
             // Show error dialog
             dialog.showErrorBox(
                 "Server Startup Error",
-                `Failed to start BoxLang server: ${error.message}\n\nPlease ensure BoxLang MiniServer is installed and in your PATH.`
+                errorMessage
             );
         } );
 
@@ -225,5 +292,30 @@ export class BoxLang {
      */
     getStatus() {
         return this.isRunning() ? 'Running' : 'Stopped';
+    }
+
+    /**
+     * Get miniserver information
+     * @returns {Object} Miniserver info
+     */
+    getMiniServerInfo() {
+        return {
+            command: this.miniserverCommand.command,
+            type: this.miniserverCommand.type,
+            isPackaged: this.miniserverCommand.type === 'packaged',
+            path: this.miniserverCommand.path
+        };
+    }
+
+    /**
+     * Check if packaged miniserver is available
+     * @returns {boolean} True if packaged miniserver exists
+     */
+    hasPackagedMiniServer() {
+        const { projectRoot, path } = this.globalSettings;
+        const packagedCommand = process.platform === 'win32'
+            ? path.join( projectRoot, '.miniserver', 'bin', 'boxlang-miniserver.bat' )
+            : path.join( projectRoot, '.miniserver', 'bin', 'boxlang-miniserver' );
+        return existsSync( packagedCommand );
     }
 }

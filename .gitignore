@@ -38,6 +38,12 @@ dist/**
 out/
 includes/resources/**
 
+# MiniServer packaging (exclude downloaded binaries)
+.miniserver/bin/
+.miniserver/lib/
+.miniserver/VERSION
+.miniserver/*.zip
+
 # Electron build artifacts
 *.app
 *.dmg

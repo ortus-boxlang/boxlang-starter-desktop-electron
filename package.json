@@ -10,6 +10,9 @@
 		"start": "cross-env NODE_ENV=development electron .electron/main.js",
 		"prod": "npm run build && electron .electron/main.js",
 		"package": "npm run build && electron-builder",
+		"package:miniserver": "boxlang .miniserver/Package.bx",
+		"package:miniserver:force": "boxlang .miniserver/Package.bx --force",
+		"package:full": "npm run package:miniserver && npm run package",
 		"preview": "vite preview",
 		"lint": "eslint --ext .js,.ts .",
 		"lint:fix": "eslint --ext .js,.ts . --fix"

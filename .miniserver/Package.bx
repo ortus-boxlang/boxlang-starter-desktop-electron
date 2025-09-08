@@ -1,7 +1,181 @@
-class{
+/**
+ * BoxLang MiniServer Packager
+ * Downloads and extracts the BoxLang MiniServer for packaging with the Electron app
+ */
+class {
 
-	function main( args = [] ){
-		var cliArgs = CLIGetArgs();
-	}
+    function main( args = [] ) {
+        var cliArgs = CliGetArgs();
+		param cliArgs.options.force = false;
+
+        println( "=== BoxLang MiniServer Packager ===" );
+
+        try {
+            // Get version from .bvmrc
+            var version = getBoxLangVersion();
+            println( "Target BoxLang Version: " & version );
+
+            // Check if already downloaded
+            if ( isAlreadyDownloaded( version ) ) {
+                println( "BoxLang MiniServer " & version & " is already downloaded." );
+                if ( !cliArgs.options.force ) {
+                    println( "Use --force to re-download." );
+                    return;
+                }
+                println( "Force flag detected, re-downloading..." );
+            }
+
+            // Download and extract
+            downloadAndExtract( version );
+
+            println( "✅ BoxLang MiniServer " & version & " packaged successfully!" );
+
+        } catch ( any e ) {
+            println( "❌ Error packaging BoxLang MiniServer: " & e.message );
+            println( e.detail ?: "" );
+            throw e;
+        }
+    }
+
+    /**
+     * Get BoxLang version from .bvmrc file
+     */
+    private function getBoxLangVersion() {
+        var bvmrcPath = expandPath( "../.bvmrc" );
+
+        if ( !fileExists( bvmrcPath ) ) {
+            throw(
+                type = "FileNotFound",
+                message = ".bvmrc file not found",
+                detail = "Expected file at: " & bvmrcPath
+            );
+        }
+
+        var version = fileRead( bvmrcPath ).trim();
+
+        if ( len( version ) == 0 ) {
+            throw(
+                type = "InvalidVersion",
+                message = ".bvmrc file is empty"
+            );
+        }
+
+        return version;
+    }
+
+    /**
+     * Check if the version is already downloaded and extracted
+     */
+    private function isAlreadyDownloaded( required string version ) {
+        var binPath = expandPath( "./bin/" );
+        var libPath = expandPath( "./lib/" );
+        var versionFile = expandPath( "./VERSION" );
+
+        // Check if directories exist and version file matches
+        if ( directoryExists( binPath ) &&
+             directoryExists( libPath ) &&
+             fileExists( versionFile ) ) {
+
+            var currentVersion = fileRead( versionFile ).trim();
+            return currentVersion == version;
+        }
+
+        return false;
+    }
+
+    /**
+     * Download and extract BoxLang MiniServer
+     */
+    private function downloadAndExtract( required string version ) {
+        var downloadUrl = "https://downloads.boxlang.io/ortus/boxlang-miniserver/" & version & "/boxlang-miniserver-" & version & ".zip";
+        var fileName = "boxlang-miniserver-" & version & ".zip";
+        var downloadPath = expandPath( "./" );
+        var zipPath = downloadPath & fileName;
+        var extractPath = expandPath( "./" );
+
+        println( "Downloading from: " & downloadUrl );
+
+        // Download the zip file using BoxLang HTTP component
+        bx:http
+			method="GET"
+			url="#downloadUrl#"
+			path="#downloadPath#"
+			file="#fileName#"
+			timeout="120"
+			result="httpResult" {
+            // HTTP component body (empty for simple GET)
+        }
+
+        if ( httpResult.statusCode != "200" ) {
+            throw(
+                type = "DownloadError",
+                message = "Failed to download BoxLang MiniServer",
+                detail = "HTTP " & httpResult.statusCode & ": " & (httpResult.statusText ?: "Unknown error")
+            );
+        }
+
+        if ( !fileExists( zipPath ) ) {
+            throw(
+                type = "DownloadError",
+                message = "Downloaded file not found at: " & zipPath
+            );
+        }
+
+        println( "✅ Downloaded successfully" );
+        println( "📦 Extracting to: " & extractPath );
+
+        // Clean existing directories
+        if ( directoryExists( expandPath( "./bin" ) ) ) {
+            directoryDelete( expandPath( "./bin" ), true );
+        }
+        if ( directoryExists( expandPath( "./lib" ) ) ) {
+            directoryDelete( expandPath( "./lib" ), true );
+        }
+
+        // Extract the zip file
+        bx:zip action="unzip" file="#zipPath#" destination="#extractPath#" overwrite="true" {
+            // Zip component body (empty for simple extraction)
+        }
+
+        // Verify extraction
+        if ( !directoryExists( expandPath( "./bin" ) ) || !directoryExists( expandPath( "./lib" ) ) ) {
+            throw(
+                type = "ExtractionError",
+                message = "Extraction failed - bin/ or lib/ directories not found"
+            );
+        }
+
+        // Write version file
+        fileWrite( expandPath( "./VERSION" ), version );
+
+        // Clean up zip file
+        if ( fileExists( zipPath ) ) {
+            fileDelete( zipPath );
+        }
+
+        println( "✅ Extraction completed" );
+        println( "📁 Created directories:" );
+        println( "   - bin/" );
+        println( "   - lib/" );
+
+        // Make bin files executable on Unix systems
+        if ( server.os.name contains "nix" || server.os.name contains "mac" ) {
+            var binFiles = directoryList( expandPath( "./bin" ), false, "name", "*.sh,boxlang-miniserver" );
+            for ( var file in binFiles ) {
+                var filePath = expandPath( "./bin/" & file );
+                try {
+                    var result = createObject( "java", "java.lang.ProcessBuilder" )
+                        .init( [ "chmod", "+x", filePath ] )
+                        .start()
+                        .waitFor();
+                    if ( result == 0 ) {
+                        println( "✅ Made " & file & " executable" );
+                    }
+                } catch ( any e ) {
+                    println( "⚠️  Could not make " & file & " executable: " & e.message );
+                }
+            }
+        }
+    }
 
 }

@@ -29,7 +29,8 @@ let appMenu;
 let shortcuts;
 
 // Environment detection
-const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = true;
+//const isDevelopment = process.env.NODE_ENV === 'development';
 
 /**
  * ----------------------------------------------------------

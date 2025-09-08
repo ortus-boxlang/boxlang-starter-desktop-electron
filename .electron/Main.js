@@ -29,8 +29,7 @@ let appMenu;
 let shortcuts;
 
 // Environment detection
-const isDevelopment = true;
-//const isDevelopment = process.env.NODE_ENV === 'development';
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 /**
  * ----------------------------------------------------------
@@ -616,8 +615,7 @@ function createWindow () {
             nodeIntegration: false,
             contextIsolation: true,
             enableRemoteModule: false,
-			// Enable dev tools in development
-			devTools: isDevelopment
+			devTools: true
         }
     } );
 

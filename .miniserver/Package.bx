@@ -4,6 +4,10 @@
  */
 class {
 
+	static {
+		ARTIFACTS_URL = "https://downloads.ortussolutions.com/ortussolutions/boxlang-runtimes/boxlang-miniserver/"
+	}
+
     function main( args = [] ) {
         var cliArgs = CliGetArgs();
 		param cliArgs.options.force = false;
@@ -13,21 +17,20 @@ class {
         try {
             // Get version from .bvmrc
             var version = getBoxLangVersion();
-            println( "Target BoxLang Version: " & version );
+            println( "✅ Target BoxLang Version: " & version );
 
             // Check if already downloaded
             if ( isAlreadyDownloaded( version ) ) {
-                println( "BoxLang MiniServer " & version & " is already downloaded." );
+                println( "🕺 BoxLang MiniServer " & version & " is already downloaded." );
                 if ( !cliArgs.options.force ) {
                     println( "Use --force to re-download." );
                     return;
                 }
-                println( "Force flag detected, re-downloading..." );
+                println( "⚡ Force flag detected, re-downloading..." );
             }
 
             // Download and extract
             downloadAndExtract( version );
-
             println( "✅ BoxLang MiniServer " & version & " packaged successfully!" );
 
         } catch ( any e ) {
@@ -38,12 +41,17 @@ class {
     }
 
     /**
-     * Get BoxLang version from .bvmrc file
+     * Get BoxLang version from the .bvmrc file
      */
     private function getBoxLangVersion() {
         var bvmrcPath = expandPath( "../.bvmrc" );
 
         if ( !fileExists( bvmrcPath ) ) {
+			println( "⚠️  " & bvmrcPath & " not found" );
+			println( "This file is required to determine which version of BoxLang MiniServer to download." );
+			println( "Please create a .bvmrc file in the project root with the desired version." );
+			println( "Or use `bvm local <version>` to create one automatically." );
+
             throw(
                 type = "FileNotFound",
                 message = ".bvmrc file not found",
@@ -75,7 +83,6 @@ class {
         if ( directoryExists( binPath ) &&
              directoryExists( libPath ) &&
              fileExists( versionFile ) ) {
-
             var currentVersion = fileRead( versionFile ).trim();
             return currentVersion == version;
         }
@@ -87,13 +94,19 @@ class {
      * Download and extract BoxLang MiniServer
      */
     private function downloadAndExtract( required string version ) {
-        var downloadUrl = "https://downloads.boxlang.io/ortus/boxlang-miniserver/" & version & "/boxlang-miniserver-" & version & ".zip";
-        var fileName = "boxlang-miniserver-" & version & ".zip";
-        var downloadPath = expandPath( "./" );
-        var zipPath = downloadPath & fileName;
-        var extractPath = expandPath( "./" );
+		var downloadUrl = static.ARTIFACTS_URL
+		if( arguments.version == "snapshot" ){
+			downloadUrl &= "boxlang-miniserver-" & version & ".zip"
+		} else {
+			downloadUrl &= version & "/boxlang-miniserver-" & version & ".zip"
+		}
 
-        println( "Downloading from: " & downloadUrl );
+        var fileName = "boxlang-miniserver-" & version & ".zip"
+        var downloadPath = expandPath( "./" )
+        var zipPath = downloadPath & fileName
+        var extractPath = expandPath( "./" )
+
+        println( "⬇️  Downloading from: [#downloadUrl#]" )
 
         // Download the zip file using BoxLang HTTP component
         bx:http
@@ -109,27 +122,27 @@ class {
         if ( httpResult.statusCode != "200" ) {
             throw(
                 type = "DownloadError",
-                message = "Failed to download BoxLang MiniServer",
-                detail = "HTTP " & httpResult.statusCode & ": " & (httpResult.statusText ?: "Unknown error")
-            );
+                message = "Failed to download BoxLang MiniServer: #httpResult.statusCode# #httpResult.statusText#",
+                detail = "#httpResult.fileContent#"
+            )
         }
 
         if ( !fileExists( zipPath ) ) {
             throw(
                 type = "DownloadError",
                 message = "Downloaded file not found at: " & zipPath
-            );
+            )
         }
 
-        println( "✅ Downloaded successfully" );
-        println( "📦 Extracting to: " & extractPath );
+        println( "✅ Downloaded successfully" )
+        println( "📦 Extracting to: " & extractPath )
 
         // Clean existing directories
         if ( directoryExists( expandPath( "./bin" ) ) ) {
-            directoryDelete( expandPath( "./bin" ), true );
+            directoryDelete( expandPath( "./bin" ), true )
         }
         if ( directoryExists( expandPath( "./lib" ) ) ) {
-            directoryDelete( expandPath( "./lib" ), true );
+            directoryDelete( expandPath( "./lib" ), true )
         }
 
         // Extract the zip file
@@ -142,37 +155,37 @@ class {
             throw(
                 type = "ExtractionError",
                 message = "Extraction failed - bin/ or lib/ directories not found"
-            );
+            )
         }
 
         // Write version file
-        fileWrite( expandPath( "./VERSION" ), version );
+        fileWrite( expandPath( "./VERSION" ), version )
 
         // Clean up zip file
         if ( fileExists( zipPath ) ) {
-            fileDelete( zipPath );
+            fileDelete( zipPath )
         }
 
-        println( "✅ Extraction completed" );
-        println( "📁 Created directories:" );
-        println( "   - bin/" );
-        println( "   - lib/" );
+        println( "✅ Extraction completed" )
+        println( "📁 Created directories:" )
+        println( "   - bin/" )
+        println( "   - lib/" )
 
         // Make bin files executable on Unix systems
         if ( server.os.name contains "nix" || server.os.name contains "mac" ) {
-            var binFiles = directoryList( expandPath( "./bin" ), false, "name", "*.sh,boxlang-miniserver" );
+            var binFiles = directoryList( expandPath( "./bin" ), false, "name", "*.sh,boxlang-miniserver" )
             for ( var file in binFiles ) {
-                var filePath = expandPath( "./bin/" & file );
+                var filePath = expandPath( "./bin/" & file )
                 try {
                     var result = createObject( "java", "java.lang.ProcessBuilder" )
                         .init( [ "chmod", "+x", filePath ] )
                         .start()
-                        .waitFor();
+                        .waitFor()
                     if ( result == 0 ) {
-                        println( "✅ Made " & file & " executable" );
+                        println( "✅ Made " & file & " executable" )
                     }
                 } catch ( any e ) {
-                    println( "⚠️  Could not make " & file & " executable: " & e.message );
+                    println( "⚠️  Could not make " & file & " executable: " & e.message )
                 }
             }
         }

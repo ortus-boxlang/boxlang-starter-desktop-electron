@@ -95,10 +95,10 @@ class {
      */
     private function downloadAndExtract( required string version ) {
 		var downloadUrl = static.ARTIFACTS_URL
-		if( arguments.version == "snapshot" ){
-			downloadUrl &= "boxlang-miniserver-" & version & ".zip"
+		if( ListFindNoCase( "snapshot,latest", arguments.version ) ){
+			downloadUrl &= "boxlang-miniserver-" & arguments.version & ".zip"
 		} else {
-			downloadUrl &= version & "/boxlang-miniserver-" & version & ".zip"
+			downloadUrl &= arguments.version & "/boxlang-miniserver-" & arguments.version & ".zip"
 		}
 
         var fileName = "boxlang-miniserver-" & version & ".zip"

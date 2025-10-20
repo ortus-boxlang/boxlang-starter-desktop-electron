@@ -1,5 +1,21 @@
+/**
+ * [BoxLang]
+ *
+ * Copyright [2023] [Ortus Solutions, Corp]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import { app, BrowserWindow, nativeImage, Menu, shell, dialog, Tray, globalShortcut } from "electron";
-import { spawn } from "child_process";
 import { fileURLToPath } from 'url';
 
 // Import our modular components
@@ -18,18 +34,15 @@ const thisFileName = fileURLToPath( import.meta.url );
 const thisDirName = path.dirname( thisFileName );
 // The path to the root of the project
 const projectRoot = path.resolve( thisDirName, "../" );
+// Environment detection
+const isDevelopment = process.env.NODE_ENV === 'development';
 
-// Global Variables
+// Global Instances
 let mainWindow;
-
-// Component instances
 let trayMenu;
 let appMenu;
 let shortcuts;
 let boxLang;
-
-// Environment detection
-const isDevelopment = process.env.NODE_ENV === 'development';
 
 /**
  * ----------------------------------------------------------
@@ -50,7 +63,8 @@ const globalSettings = {
     projectRoot,
     path,
     // The loading view path
-    loadingView: path.join( projectRoot, "views/loading.html" )
+    loadingView: path.join( projectRoot, "views/loading.html" ),
+	isDevelopment
 };
 
 // Set app name early (before app is ready)

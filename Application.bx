@@ -39,7 +39,7 @@ class {
 	this.datasources[ "boxlangDB" ] = {
 	"driver"  : "sqlite",
 	"protocol": "directory",
-	"database": "./.db/boxlangDB"
+	"database": "./.database/boxlangDB"
 };
 
 	/**

@@ -55,9 +55,6 @@ boxlang-starter-electron/
 ├── .miniserver/                # BoxLang MiniServer distribution
 │   ├── Package.bx              # Download/package script (run via npm)
 │   └── bin/                    # MiniServer executables (after packaging)
-├── .boxlang/
-│   └── config/
-│       └── boxlang.json        # BoxLang runtime configuration
 ├── includes/
 │   ├── helpers/
 │   │   └── ViteHelper.bx       # Resolves Vite assets in BoxLang templates
@@ -73,10 +70,14 @@ boxlang-starter-electron/
 │       ├── scss/
 │       │   └── app.scss        # SCSS entry point
 │       └── fonts/              # Bundled web fonts (Poppins)
+├── scripts/
+│   └── generate-icons.js       # Generates includes/icon.ico for Windows
 ├── views/
 │   └── loading.html            # Loading screen shown while MiniServer starts
+├── .boxlang.json               # BoxLang runtime configuration
 ├── Application.bx              # BoxLang application listener (sessions, mappings)
 ├── index.bxm                   # Home page template
+├── miniserver.json             # BoxLang MiniServer configuration (port, host, webroot…)
 ├── vite.config.mjs             # Vite configuration
 ├── package.json                # Node scripts, dependencies, electron-builder config
 └── .bvmrc                      # BoxLang version pin (1.6.0)
@@ -142,16 +143,27 @@ This downloads BoxLang MiniServer `1.6.0` and extracts it to `.miniserver/bin/` 
 
 ### Server configuration
 
-The server is configured in `.electron/Main.js` under `globalSettings`:
+All BoxLang MiniServer settings live in `miniserver.json` at the project root:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `serverPort` | `59700` | Local HTTP port |
+| `port` | `59700` | Local HTTP port |
+| `host` | `127.0.0.1` | Bind address (localhost only) |
+| `webroot` | `.` | Web root directory |
+| `serverHome` | `.miniserver/.boxlang` | BoxLang runtime data directory |
+| `rewrites` | `true` | Enable URL rewriting |
+| `debug` | `false` | Enable debug/verbose output |
+
+App-level settings (window size, app name, etc.) are configured in `.electron/Main.js` under `globalSettings`:
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `serverPort` | read from `miniserver.json` | Local HTTP port |
 | `serverDebugMode` | `true` in dev, `false` in prod | BoxLang `--debug` flag |
 | `appName` | `"BoxLang Starter Desktop"` | Window title and tray tooltip |
 | `windowWidth` / `windowHeight` | `1200` / `800` | Initial window dimensions |
 
-BoxLang runtime settings (session timeout, datasources, caching, logging) live in `.boxlang/config/boxlang.json`.
+BoxLang runtime settings (session timeout, datasources, caching, logging) live in `.boxlang.json` at the project root.
 
 ---
 
@@ -201,7 +213,7 @@ The app integrates with each OS's native desktop environment:
 
 ### System Tray (all platforms)
 - Tray icon persists when the window is closed/hidden
-- Context menu: Show, Restart Server, Open in Browser, Quit
+- Context menu: Show Application, Hide Application, Server Status, Restart BoxLang Server, Open in Browser, Quit
 - Single-click the tray icon to toggle the window
 
 ### Window close behavior
@@ -232,7 +244,7 @@ These work system-wide (even when the app window is not focused):
 | Shortcut | Action |
 |----------|--------|
 | `Cmd/Ctrl + Shift + L` | Show / hide window |
-| `Cmd/Ctrl + Shift + R` | Restart BoxLang server |
+| `Cmd/Ctrl + Shift + B` | Restart BoxLang server |
 | `Cmd/Ctrl + Shift + O` | Open app in default browser |
 
 ---
@@ -297,19 +309,27 @@ Place partials under `resources/assets/scss/` and import them in `app.scss`. The
 
 ### `.electron/Main.js` — `globalSettings`
 
-The central configuration object. Edit this to change app-level behavior:
+The central app-level configuration object. Edit this to change app-level behavior:
 
 ```js
 const globalSettings = {
-    serverPort: 59700,         // MiniServer port
-    serverDebugMode: true,     // --debug flag (auto-false in production)
+    serverPort,                // Read from miniserver.json (default 59700)
+    serverDebugMode: isDevelopment,  // true in dev, false in production
     appName: "BoxLang Starter Desktop",
     windowHeight: 800,
     windowWidth: 1200,
+    projectRoot,               // Absolute path to the project root
+    path,                      // Node.js path module
+    loadingView,               // Path to views/loading.html
+    isDevelopment              // true when NODE_ENV=development
 };
 ```
 
-### `.boxlang/config/boxlang.json`
+### `miniserver.json`
+
+BoxLang MiniServer settings: port, bind address, web root, server home directory, URL rewrites, and debug mode. Edit this file to configure the embedded HTTP server without touching application code.
+
+### `.boxlang.json`
 
 BoxLang runtime settings: session management, datasources, caching, logging, security restrictions, and module paths. See the [BoxLang documentation](https://boxlang.ortusbooks.com) for all available options.
 

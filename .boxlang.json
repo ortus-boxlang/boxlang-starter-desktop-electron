@@ -392,7 +392,7 @@
 				"evictionPolicy": "LRU",
 				"freeMemoryPercentageThreshold": 0,
 				"maxObjects": 500,
-				// 30 minutes ifnot used
+				// 30 minutes if not used
 				"defaultLastAccessTimeout": 1800,
 				// 60 minutes default
 				"defaultTimeout": 3600,

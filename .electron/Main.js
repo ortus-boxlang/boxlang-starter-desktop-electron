@@ -276,7 +276,7 @@ function showAboutDialog () {
 		message: globalSettings.appName,
 		detail: `Version: 1.0.0\n${globalSettings.appName}\nBuilt with Electron and Vite\n\nServer Port: ${globalSettings.serverPort}\nDebug Mode: ${globalSettings.serverDebugMode ? 'Enabled' : 'Disabled'}`,
 		buttons: [ 'OK' ],
-		icon: nativeImage.createFromPath( resolveAsset( 'includes', 'icon.iconset', 'icon_64x64.png' ) )
+		icon: nativeImage.createFromPath( resolveAsset( 'includes', 'icon.iconset', 'icon_128x128.png' ) )
 	} );
 }
 
@@ -305,12 +305,6 @@ function createWindow () {
 	// Open dev tools automatically in development
 	if ( isDevelopment ) {
 		mainWindow.webContents.openDevTools();
-	}
-
-	// Window's only icon, requires a nativeImage
-	const overlay = nativeImage.createFromPath( globalSettings.path.join( globalSettings.projectRoot, 'includes/icnset/icon_32x32.png' ) );
-	if ( !overlay.isEmpty() ) {
-		mainWindow.setOverlayIcon( overlay, globalSettings.appName );
 	}
 
 	// Windows-only: taskbar overlay icon (ideally 16x16 PNG)
@@ -352,11 +346,13 @@ function createWindow () {
 		}
 	} );
 
-	// Monitor close to hide on macOS
+	// Minimize to tray on close (macOS: always hide; Windows/Linux: hide when tray exists)
 	mainWindow.on( 'close', ( e ) => {
-		if ( !appIsQuitting && process.platform === 'darwin' ) {
-			e.preventDefault();    // just hide window instead of quitting
-			mainWindow.hide();
+		if ( !appIsQuitting ) {
+			if ( process.platform === 'darwin' || trayMenu.hasTray() ) {
+				e.preventDefault();
+				mainWindow.hide();
+			}
 		}
 	} );
 }

@@ -44,7 +44,7 @@ export class TrayMenu {
      */
     create( callbacks = {} ) {
         // Use a smaller icon for the tray (16x16 is typical)
-        const trayIcon = nativeImage.createFromPath( this.resolveAsset( 'includes', 'icons', 'icon_16x16.png' ) );
+        const trayIcon = nativeImage.createFromPath( this.resolveAsset( 'includes', 'icon.iconset', 'icon_16x16.png' ) );
 
         if ( trayIcon.isEmpty() ) {
             // Fallback if the specific tray icon doesn't exist
@@ -155,6 +155,14 @@ export class TrayMenu {
             }
         ] );
         this.tray.setContextMenu( contextMenu );
+    }
+
+    /**
+     * Whether a tray instance currently exists
+     * @returns {boolean}
+     */
+    hasTray() {
+        return this.tray !== null;
     }
 
     /**

@@ -8,7 +8,7 @@
 		"dev": "concurrently --kill-others \"vite\" \"sleep 3 && cross-env NODE_ENV=development electron .electron/Main.js\"",
 		"build": "vite build",
 		"start": "cross-env NODE_ENV=development electron .electron/Main.js",
-		"prod": "npm run build && electron .electron/main.js",
+		"prod": "npm run build && electron .electron/Main.js",
 		"package": "npm run build && electron-builder",
 		"package:miniserver": "boxlang .miniserver/Package.bx",
 		"package:miniserver:force": "boxlang .miniserver/Package.bx --force",
@@ -49,7 +49,10 @@
 			"**/*",
 			"!**/node_modules/**",
 			"!dist/electron/**",
-			"!resources/assets/**"
+			"!resources/assets/**",
+			"!.miniserver/.boxlang/**",
+			"!.boxlang/classes/**",
+			"!.boxlang/logs/**"
 		],
 		"mac": {
 			"icon": "includes/icon.icns",

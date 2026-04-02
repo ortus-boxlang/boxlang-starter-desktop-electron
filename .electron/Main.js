@@ -17,6 +17,7 @@
  */
 import { app, BrowserWindow, nativeImage, Menu, shell, dialog, Tray, globalShortcut } from "electron";
 import { fileURLToPath } from 'url';
+import { readFileSync } from 'fs';
 
 // Import our modular components
 import { TrayMenu } from './TrayMenu.js';
@@ -37,6 +38,19 @@ const projectRoot = path.resolve( thisDirName, "../" );
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
 
+// Read miniserver.json for server settings (port used in menus, about dialog, etc.)
+let miniserverJson = {};
+try {
+    const raw = readFileSync( path.join( projectRoot, 'miniserver.json' ), 'utf8' );
+    const stripped = raw
+        .replace( /\/\*[\s\S]*?\*\//g, '' )  // block comments
+        .replace( /\/\/.*$/gm, '' );           // single-line comments
+    miniserverJson = JSON.parse( stripped );
+} catch {
+    // File missing or unreadable — BoxLang.js will apply its own defaults
+}
+const serverPort = miniserverJson.port ?? 59700;
+
 // Global Instances
 let mainWindow;
 let trayMenu;
@@ -51,8 +65,8 @@ let boxLang;
  *  You can change these settings to customize the app as you see fit.
  */
 const globalSettings = {
-    // The internal server port
-    serverPort: 59700,
+    // The internal server port — read from miniserver.json
+    serverPort,
     // Enable debug mode for the server — on by default in development only
     serverDebugMode: isDevelopment,
     // Window Defaults

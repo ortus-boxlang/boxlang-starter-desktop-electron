@@ -1,0 +1,18 @@
+{
+// BoxLang MiniServer Configuration
+// Edit these settings to customize server behavior without touching the application code.
+
+// The port the server listens on
+"port": 59700,
+// Bind only to localhost — this is a desktop app, not a network service
+"host": "127.0.0.1",
+// The web root directory served by the miniserver (relative to project root)
+"webroot": ".",
+// Where BoxLang stores its runtime files (logs, compiled classes, etc.)
+// Kept inside .miniserver so the whole runtime package is self-contained
+"serverHome": ".miniserver/.boxlang",
+// Enable URL rewriting support
+"rewrites": true,
+// Enable debug/verbose output — set to true for local debugging
+"debug": false
+}

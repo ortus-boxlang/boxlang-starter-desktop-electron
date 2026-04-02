@@ -164,7 +164,10 @@ export class BoxLang {
         this.setProgressBar( 2 );
         this.setDockBadge( '…' );
 
-        const { projectRoot, serverPort, serverDebugMode, path } = this.globalSettings;
+        const { projectRoot, serverDebugMode, path } = this.globalSettings;
+
+        // Path to the miniserver config file — the server reads all settings from it
+        const miniserverConfigPath = path.join( projectRoot, 'miniserver.json' );
 
         // Prepare spawn options
         const spawnOptions = {
@@ -194,25 +197,13 @@ export class BoxLang {
         this.process = spawn(
             // Command
             this.miniserverCommand.command,
-            // Command Arguments
+            // Pass miniserver.json as the config file — the server reads all settings from it.
+            // Only --debug is passed as a CLI override when running in development mode,
+            // since miniserver.json ships with debug:false.
             [
-                // Port
-                "-p",
-                serverPort.toString(),
-                // If serverDebugMode = true, then add --debug, else nothing
-                serverDebugMode ? "--debug" : "",
-                // Enable Rewrites
-                "--rewrites",
-                // Bind locally only, this is a desktop app
-                "--host",
-                "127.0.0.1",
-                // Webroot
-                "-w",
-                projectRoot,
-                // BoxLang Custom Home
-                "--serverHome",
-                path.join( projectRoot, ".boxlang" )
-            ].filter( Boolean ), // Remove empty strings
+                miniserverConfigPath,
+                serverDebugMode ? "--debug" : ""
+            ].filter( Boolean ),
             // Spawn Options
             spawnOptions
         );
@@ -333,17 +324,18 @@ export class BoxLang {
      */
     checkServerReady( message ) {
         if ( message.toString().includes( "BoxLang MiniServer started" ) ) {
+            const serverPort = this.globalSettings.serverPort;
             // Server is up — clear progress indicators and notify
             this.setProgressBar( -1 );
             this.setDockBadge( '' );
             this.notify(
                 'BoxLang Server Started',
-                `Server is running on port ${this.globalSettings.serverPort}`
+                `Server is running on port ${serverPort}`
             );
 
             const loadPage = () => {
                 if ( this.mainWindow ) {
-                    this.mainWindow.loadURL( `http://localhost:${this.globalSettings.serverPort}/` );
+                    this.mainWindow.loadURL( `http://localhost:${serverPort}/` );
                 }
             };
 

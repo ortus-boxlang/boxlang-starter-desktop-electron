@@ -53,8 +53,8 @@ let boxLang;
 const globalSettings = {
     // The internal server port
     serverPort: 59700,
-    // Enable debug mode for the server (true/false)
-    serverDebugMode: true,
+    // Enable debug mode for the server — on by default in development only
+    serverDebugMode: isDevelopment,
     // Window Defaults
     appName: "BoxLang Starter Desktop",
     windowHeight: 800,
@@ -163,6 +163,10 @@ app.on( 'activate', () => {
         if ( !boxLang.isRunning() ) {
             boxLang.start();
         }
+    } else if ( mainWindow ) {
+        // Window exists but may be hidden (e.g. user clicked dock icon after closing to tray)
+        mainWindow.show();
+        mainWindow.focus();
     }
 } );
 
@@ -292,13 +296,13 @@ function createWindow () {
 		show: isDevelopment,
 		// NOTE: icon is used on Windows/Linux. Prefer .ico on Windows, .png on Linux.
 		icon: process.platform === 'win32'
-		? resolveAsset( 'favicon.ico' )
+		? resolveAsset( 'includes', 'icon.ico' )
 		: resolveAsset( 'includes', 'icon.iconset', 'icon_32x32.png' ),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
             enableRemoteModule: false,
-			devTools: true
+			devTools: isDevelopment
         }
     } );
 

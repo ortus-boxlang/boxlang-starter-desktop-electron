@@ -7,7 +7,7 @@
 	"scripts": {
 		"dev": "concurrently --kill-others \"vite\" \"sleep 3 && cross-env NODE_ENV=development electron .electron/Main.js\"",
 		"build": "vite build",
-		"start": "cross-env NODE_ENV=development electron .electron/main.js",
+		"start": "cross-env NODE_ENV=development electron .electron/Main.js",
 		"prod": "npm run build && electron .electron/main.js",
 		"package": "npm run build && electron-builder",
 		"package:miniserver": "boxlang .miniserver/Package.bx",
@@ -39,6 +39,9 @@
 		"productName": "BoxLang Starter Desktop",
 		"appId": "io.boxlang.starter",
 		"asar": true,
+		"asarUnpack": [
+			".miniserver/**"
+		],
 		"directories": {
 			"output": "dist/electron"
 		},

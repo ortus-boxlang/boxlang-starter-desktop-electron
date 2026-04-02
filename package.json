@@ -5,7 +5,7 @@
 	"description": "A starter BoxLang application for building desktop applications with Electron",
 	"main": ".electron/Main.js",
 	"scripts": {
-		"dev": "concurrently --kill-others \"vite\" \"sleep 3 && cross-env NODE_ENV=development electron .electron/main.js\"",
+		"dev": "concurrently --kill-others \"vite\" \"sleep 3 && cross-env NODE_ENV=development electron .electron/Main.js\"",
 		"build": "vite build",
 		"start": "cross-env NODE_ENV=development electron .electron/main.js",
 		"prod": "npm run build && electron .electron/main.js",
@@ -15,7 +15,8 @@
 		"package:full": "npm run package:miniserver && npm run package",
 		"preview": "vite preview",
 		"lint": "eslint --ext .js,.ts .",
-		"lint:fix": "eslint --ext .js,.ts . --fix"
+		"lint:fix": "eslint --ext .js,.ts . --fix",
+		"generate:icons": "node scripts/generate-icons.js"
 	},
 	"keywords": [],
 	"author": "YOU",
@@ -31,11 +32,13 @@
 		"eslint": "^8.0.0",
 		"sass": "^1.77.0",
 		"vite": "^7.1.4",
+		"png-to-ico": "^2.1.8",
 		"wait-on": "^7.2.0"
 	},
 	"build": {
 		"productName": "BoxLang Starter Desktop",
 		"appId": "io.boxlang.starter",
+		"asar": true,
 		"directories": {
 			"output": "dist/electron"
 		},
@@ -43,8 +46,7 @@
 			"**/*",
 			"!**/node_modules/**",
 			"!dist/electron/**",
-			"!resources/assets/**",
-			"resources/dist/**"
+			"!resources/assets/**"
 		],
 		"mac": {
 			"icon": "includes/icon.icns",
@@ -54,9 +56,16 @@
 			"icon": "includes/icon.ico",
 			"target": "nsis"
 		},
+		"nsis": {
+			"oneClick": false,
+			"allowDirChange": true,
+			"createDesktopShortcut": true,
+			"createStartMenuShortcut": true
+		},
 		"linux": {
 			"icon": "includes/icon.iconset/icon.png",
-			"target": "AppImage"
+			"target": "AppImage",
+			"category": "Utility"
 		}
 	}
 }

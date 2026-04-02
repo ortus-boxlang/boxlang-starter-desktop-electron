@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 import { spawn } from "child_process";
-import { dialog } from "electron";
+import { dialog, Notification, app } from "electron";
 import { existsSync } from "fs";
 
 /**
@@ -35,6 +35,50 @@ export class BoxLang {
 
         // Determine the miniserver command to use
         this.miniserverCommand = this.detectMiniServerCommand();
+    }
+
+
+    /**
+     * Send a desktop notification
+     * @param {string} title
+     * @param {string} body
+     */
+    notify( title, body ) {
+        if ( Notification.isSupported() ) {
+            new Notification( { title, body } ).show();
+        }
+    }
+
+    /**
+     * Set the macOS dock badge text. Pass empty string to clear it.
+     * @param {string} text
+     */
+    setDockBadge( text ) {
+        if ( process.platform === 'darwin' && app?.dock ) {
+            app.dock.setBadge( text );
+        }
+    }
+
+    /**
+     * Set taskbar progress bar. Pass -1 to remove, 2 for indeterminate (pulsing).
+     * @param {number} value
+     */
+    setProgressBar( value ) {
+        if ( this.mainWindow && !this.mainWindow.isDestroyed() ) {
+            this.mainWindow.setProgressBar( value );
+        }
+    }
+
+    /**
+     * Draw user attention: flash taskbar (Windows/Linux) or bounce dock (macOS).
+     * @param {'critical'|'informational'} type  macOS bounce type (ignored on other platforms)
+     */
+    requestAttention( type = 'critical' ) {
+        if ( process.platform === 'darwin' && app?.dock ) {
+            app.dock.bounce( type );
+        } else if ( this.mainWindow && !this.mainWindow.isDestroyed() ) {
+            this.mainWindow.flashFrame( true );
+        }
     }
 
 	/**
@@ -116,6 +160,10 @@ export class BoxLang {
             return;
         }
 
+        // Show indeterminate progress bar while server is starting
+        this.setProgressBar( 2 );
+        this.setDockBadge( '…' );
+
         const { projectRoot, serverPort, serverDebugMode, path } = this.globalSettings;
 
         // Prepare spawn options
@@ -184,6 +232,10 @@ export class BoxLang {
         this.process.on( "close", ( code ) => {
             console.log( `BoxLang process exited with code ${code}` );
 
+            // Clear progress bar and dock badge on exit
+            this.setProgressBar( -1 );
+            this.setDockBadge( '' );
+
             // Notify about status change
             if ( this.updateCallback ) {
                 this.updateCallback();
@@ -192,6 +244,11 @@ export class BoxLang {
             // Auto-restart on unexpected exit (not during app shutdown)
             if ( !this.isQuitting && code !== 0 ) {
                 console.log( "BoxLang server crashed, attempting restart in 5 seconds..." );
+                this.notify(
+                    'BoxLang Server Crashed',
+                    `Server stopped unexpectedly (code ${code}). Restarting in 5 seconds…`
+                );
+                this.requestAttention( 'critical' );
                 setTimeout( () => {
                     if ( !this.isQuitting ) {
                         this.start();
@@ -258,6 +315,7 @@ export class BoxLang {
      */
     restart() {
         console.log( "Restarting BoxLang server..." );
+        this.notify( 'BoxLang Server', 'Restarting server…' );
         this.stop();
 
         // Notify about status change
@@ -276,6 +334,14 @@ export class BoxLang {
      */
     checkServerReady( message ) {
         if ( message.toString().includes( "BoxLang MiniServer started" ) ) {
+            // Server is up — clear progress indicators and notify
+            this.setProgressBar( -1 );
+            this.setDockBadge( '' );
+            this.notify(
+                'BoxLang Server Started',
+                `Server is running on port ${this.globalSettings.serverPort}`
+            );
+
             const loadPage = () => {
                 if ( this.mainWindow ) {
                     this.mainWindow.loadURL( `http://localhost:${this.globalSettings.serverPort}/` );

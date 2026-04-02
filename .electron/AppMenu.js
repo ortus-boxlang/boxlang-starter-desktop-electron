@@ -146,7 +146,7 @@ export class AppMenu {
                 label: 'Help',
                 submenu: [
                     {
-                        label: 'About' + app.getName(),
+                        label: 'About ' + app.getName(),
                         click: () => callbacks.showAbout?.()
                     },
                     {

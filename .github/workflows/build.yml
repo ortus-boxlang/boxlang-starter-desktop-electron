@@ -38,10 +38,8 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install BoxLang CLI
-        run: |
-          curl -fsSL https://downloads.ortussolutions.com/ortussolutions/boxlang/install-boxlang.sh | bash
-          echo "$HOME/.boxlang/bin" >> "$GITHUB_PATH"
+      - name: Setup BoxLang
+        uses: ortus-boxlang/setup-boxlang@v1
 
       - name: Install npm dependencies
         run: npm ci
@@ -79,13 +77,8 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install BoxLang CLI
-        shell: pwsh
-        run: |
-          $installerUrl = "https://downloads.ortussolutions.com/ortussolutions/boxlang/install-boxlang.ps1"
-          Invoke-WebRequest -Uri $installerUrl -OutFile install-boxlang.ps1
-          PowerShell -ExecutionPolicy Bypass -File install-boxlang.ps1
-          echo "$env:USERPROFILE\.boxlang\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Setup BoxLang
+        uses: ortus-boxlang/setup-boxlang@v1
 
       - name: Install npm dependencies
         run: npm ci
@@ -123,10 +116,8 @@ jobs:
           node-version: "20"
           cache: "npm"
 
-      - name: Install BoxLang CLI
-        run: |
-          curl -fsSL https://downloads.ortussolutions.com/ortussolutions/boxlang/install-boxlang.sh | bash
-          echo "$HOME/.boxlang/bin" >> "$GITHUB_PATH"
+      - name: Setup BoxLang
+        uses: ortus-boxlang/setup-boxlang@v1
 
       - name: Install npm dependencies
         run: npm ci

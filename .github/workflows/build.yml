@@ -16,6 +16,10 @@ on:
     branches:
       - main
 
+# Restrict default token permissions across all jobs
+permissions:
+  contents: read
+
 jobs:
   ##########################################################################
   # macOS build — produces a .dmg installer

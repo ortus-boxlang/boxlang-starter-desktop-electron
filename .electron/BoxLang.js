@@ -111,9 +111,11 @@ export class BoxLang {
         const { projectRoot, path } = this.globalSettings;
         const configPath = path.join( projectRoot, 'miniserver.json' );
         try {
-            // Strip single-line comments before parsing (the file uses // comments)
+            // Strip single-line (//) and block (/* */) comments before parsing
             const raw = readFileSync( configPath, 'utf8' );
-            const stripped = raw.replace( /\/\/.*$/gm, '' );
+            const stripped = raw
+                .replace( /\/\*[\s\S]*?\*\//g, '' )  // block comments
+                .replace( /\/\/.*$/gm, '' );           // single-line comments
             return JSON.parse( stripped );
         } catch ( error ) {
             console.warn( `⚠️  Could not read miniserver.json (${error.message}), using defaults` );

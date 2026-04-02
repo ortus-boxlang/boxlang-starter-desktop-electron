@@ -42,7 +42,10 @@ const isDevelopment = process.env.NODE_ENV === 'development';
 let miniserverJson = {};
 try {
     const raw = readFileSync( path.join( projectRoot, 'miniserver.json' ), 'utf8' );
-    miniserverJson = JSON.parse( raw.replace( /\/\/.*$/gm, '' ) );
+    const stripped = raw
+        .replace( /\/\*[\s\S]*?\*\//g, '' )  // block comments
+        .replace( /\/\/.*$/gm, '' );           // single-line comments
+    miniserverJson = JSON.parse( stripped );
 } catch {
     // File missing or unreadable — BoxLang.js will apply its own defaults
 }

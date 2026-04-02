@@ -49,8 +49,8 @@ export class Shortcuts {
             }
         } );
 
-        // Quick restart BoxLang server
-        globalShortcut.register( 'CommandOrControl+Shift+R', () => {
+        // Quick restart BoxLang server (CmdOrCtrl+Shift+B to avoid conflict with Force Reload)
+        globalShortcut.register( 'CommandOrControl+Shift+B', () => {
             callbacks.restartBoxLang?.();
         } );
 

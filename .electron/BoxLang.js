@@ -283,10 +283,9 @@ export class BoxLang {
             );
         } );
 
-        // Handle stdout for server ready detection
-        this.process.stdout.on( 'data', ( message ) => {
-            this.checkServerReady( message );
-        } );
+        // Handle stdout for server ready detection (bound once so it can be removed)
+        this._onStdout = ( message ) => this.checkServerReady( message );
+        this.process.stdout.on( 'data', this._onStdout );
 
         // Update status after a delay
         setTimeout( () => {
@@ -353,11 +352,11 @@ export class BoxLang {
             }, 1000 );
 
             if ( this.mainWindow ) {
-                this.mainWindow.webContents.on( "did-finish-load", () => {
+                this.mainWindow.webContents.once( "did-finish-load", () => {
                     console.log( "Page loaded successfully." );
                 } );
 
-                this.mainWindow.webContents.on( "did-fail-load", () => {
+                this.mainWindow.webContents.once( "did-fail-load", () => {
                     setTimeout( () => {
                         loadPage();
                         console.log( "Retrying to load the page..." );
@@ -365,10 +364,11 @@ export class BoxLang {
                 } );
             }
 
-            // Remove the listener after first successful start
-            this.process.stdout.removeListener( "data", ( message ) => {
-                this.checkServerReady( message );
-            } );
+            // Detach the stdout listener — it's no longer needed after first start
+            if ( this._onStdout ) {
+                this.process.stdout.removeListener( "data", this._onStdout );
+                this._onStdout = null;
+            }
         }
     }
 

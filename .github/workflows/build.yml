@@ -1,0 +1,144 @@
+##############################################################################
+# Build & Package — BoxLang Electron Desktop App
+#
+# Runs on every push to main/develop and on every pull-request targeting main.
+# Each platform (macOS, Windows, Linux) builds in its own runner so that
+# native toolchains are available for code-signing and packaging.
+##############################################################################
+name: Build and Package
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  ##########################################################################
+  # macOS build — produces a .dmg installer
+  ##########################################################################
+  build-macos:
+    name: Build (macOS)
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install BoxLang CLI
+        run: |
+          curl -fsSL https://downloads.ortussolutions.com/ortussolutions/boxlang/install-boxlang.sh | bash
+          echo "$HOME/.boxlang/bin" >> "$GITHUB_PATH"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Package BoxLang MiniServer
+        run: npm run package:miniserver
+
+      - name: Build Vite assets
+        run: npm run build
+
+      - name: Package Electron app (macOS)
+        run: npx electron-builder --mac --publish never
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-app-macos
+          path: dist/electron/*.dmg
+          retention-days: 7
+
+  ##########################################################################
+  # Windows build — produces an NSIS installer (.exe)
+  ##########################################################################
+  build-windows:
+    name: Build (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install BoxLang CLI
+        shell: pwsh
+        run: |
+          $installerUrl = "https://downloads.ortussolutions.com/ortussolutions/boxlang/install-boxlang.ps1"
+          Invoke-WebRequest -Uri $installerUrl -OutFile install-boxlang.ps1
+          PowerShell -ExecutionPolicy Bypass -File install-boxlang.ps1
+          echo "$env:USERPROFILE\.boxlang\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Package BoxLang MiniServer
+        run: npm run package:miniserver
+
+      - name: Build Vite assets
+        run: npm run build
+
+      - name: Package Electron app (Windows)
+        run: npx electron-builder --win --publish never
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-app-windows
+          path: dist/electron/*.exe
+          retention-days: 7
+
+  ##########################################################################
+  # Linux build — produces an AppImage
+  ##########################################################################
+  build-linux:
+    name: Build (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install BoxLang CLI
+        run: |
+          curl -fsSL https://downloads.ortussolutions.com/ortussolutions/boxlang/install-boxlang.sh | bash
+          echo "$HOME/.boxlang/bin" >> "$GITHUB_PATH"
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Package BoxLang MiniServer
+        run: npm run package:miniserver
+
+      - name: Build Vite assets
+        run: npm run build
+
+      - name: Package Electron app (Linux)
+        run: npx electron-builder --linux --publish never
+
+      - name: Upload Linux artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-app-linux
+          path: dist/electron/*.AppImage
+          retention-days: 7

@@ -3,11 +3,14 @@
 settings.xml
 WEB-INF
 
-# BoxLang Home
+# BoxLang Home — runtime data (classes, logs, seed) only; config lives in .boxlang.json
 .boxlang/classes/**
 .boxlang/logs/**
 # Seed is never in source, so each desktop app is secure
 .boxlang/config/.seed
+
+# MiniServer runtime home (logs, compiled classes, etc.)
+.miniserver/.boxlang/
 
 # Engines + Database + CBFS + Secrets
 .env

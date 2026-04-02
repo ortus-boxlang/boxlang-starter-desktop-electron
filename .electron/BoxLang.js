@@ -17,7 +17,7 @@
  */
 import { spawn } from "child_process";
 import { dialog, Notification, app } from "electron";
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 
 /**
  * BoxLang Server Management Module
@@ -32,9 +32,6 @@ export class BoxLang {
         // References that will be set later
         this.mainWindow = null;
         this.updateCallback = null;
-
-        // Load miniserver configuration from miniserver.json
-        this.miniserverConfig = this.loadMiniserverConfig();
 
         // Determine the miniserver command to use
         this.miniserverCommand = this.detectMiniServerCommand();
@@ -100,27 +97,6 @@ export class BoxLang {
      */
     setQuitting( quitting ) {
         this.isQuitting = quitting;
-    }
-
-    /**
-     * Load miniserver configuration from miniserver.json
-     * Falls back to sensible defaults if the file cannot be read.
-     * @returns {Object} Parsed miniserver configuration
-     */
-    loadMiniserverConfig() {
-        const { projectRoot, path } = this.globalSettings;
-        const configPath = path.join( projectRoot, 'miniserver.json' );
-        try {
-            // Strip single-line (//) and block (/* */) comments before parsing
-            const raw = readFileSync( configPath, 'utf8' );
-            const stripped = raw
-                .replace( /\/\*[\s\S]*?\*\//g, '' )  // block comments
-                .replace( /\/\/.*$/gm, '' );           // single-line comments
-            return JSON.parse( stripped );
-        } catch ( error ) {
-            console.warn( `⚠️  Could not read miniserver.json (${error.message}), using defaults` );
-            return {};
-        }
     }
 
     /**
@@ -190,13 +166,8 @@ export class BoxLang {
 
         const { projectRoot, serverDebugMode, path } = this.globalSettings;
 
-        // Resolve server settings from miniserver.json (with fallbacks)
-        const serverPort   = this.miniserverConfig.port      ?? 59700;
-        const serverHost   = this.miniserverConfig.host      ?? '127.0.0.1';
-        const rewrites     = this.miniserverConfig.rewrites  !== false;
-        const debugMode    = this.miniserverConfig.debug     || serverDebugMode;
-        const webroot      = path.resolve( projectRoot, this.miniserverConfig.webroot      ?? '.' );
-        const serverHome   = path.resolve( projectRoot, this.miniserverConfig.serverHome   ?? '.miniserver/.boxlang' );
+        // Path to the miniserver config file — the server reads all settings from it
+        const miniserverConfigPath = path.join( projectRoot, 'miniserver.json' );
 
         // Prepare spawn options
         const spawnOptions = {
@@ -226,25 +197,13 @@ export class BoxLang {
         this.process = spawn(
             // Command
             this.miniserverCommand.command,
-            // Command Arguments — all settings driven by miniserver.json
+            // Pass miniserver.json as the config file — the server reads all settings from it.
+            // Only --debug is passed as a CLI override when running in development mode,
+            // since miniserver.json ships with debug:false.
             [
-                // Port
-                "-p",
-                serverPort.toString(),
-                // Debug mode (enabled when miniserver.json debug=true or in development)
-                debugMode ? "--debug" : "",
-                // Enable URL rewrites
-                rewrites ? "--rewrites" : "",
-                // Bind locally only — this is a desktop app
-                "--host",
-                serverHost,
-                // Webroot
-                "-w",
-                webroot,
-                // BoxLang runtime home (logs, compiled classes, etc.)
-                "--serverHome",
-                serverHome
-            ].filter( Boolean ), // Remove empty strings
+                miniserverConfigPath,
+                serverDebugMode ? "--debug" : ""
+            ].filter( Boolean ),
             // Spawn Options
             spawnOptions
         );
@@ -365,7 +324,7 @@ export class BoxLang {
      */
     checkServerReady( message ) {
         if ( message.toString().includes( "BoxLang MiniServer started" ) ) {
-            const serverPort = this.miniserverConfig.port ?? this.globalSettings.serverPort;
+            const serverPort = this.globalSettings.serverPort;
             // Server is up — clear progress indicators and notify
             this.setProgressBar( -1 );
             this.setDockBadge( '' );

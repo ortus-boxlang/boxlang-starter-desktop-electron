@@ -50,7 +50,7 @@
 			"!**/node_modules/**",
 			"!dist/electron/**",
 			"!resources/assets/**",
-			"!.miniserver/.boxlang/**",
+			"!.miniserver/home/**",
 			"!.boxlang/classes/**",
 			"!.boxlang/logs/**"
 		],

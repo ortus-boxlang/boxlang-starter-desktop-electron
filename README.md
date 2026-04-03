@@ -150,7 +150,7 @@ All BoxLang MiniServer settings live in `miniserver.json` at the project root:
 | `port` | `59700` | Local HTTP port |
 | `host` | `127.0.0.1` | Bind address (localhost only) |
 | `webroot` | `.` | Web root directory |
-| `serverHome` | `.miniserver/.boxlang` | BoxLang runtime data directory |
+| `serverHome` | `.miniserver/home` | BoxLang runtime data directory |
 | `rewrites` | `true` | Enable URL rewriting |
 | `debug` | `false` | Enable debug/verbose output |
 

@@ -175,7 +175,7 @@ export class BoxLang {
             detached: false,
             shell: false,
             windowsHide: true,
-            env: { ...process.env }
+            env: { ...process.env, BOXLANG_HOME: path.join( projectRoot, '.miniserver', 'home' ) }
         };
 
         // For packaged miniserver, we need to set up the environment

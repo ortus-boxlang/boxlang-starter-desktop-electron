@@ -10,7 +10,7 @@
 "webroot": ".",
 // Where BoxLang stores its runtime files (logs, compiled classes, etc.)
 // Kept inside .miniserver so the whole runtime package is self-contained
-"serverHome": ".miniserver/.boxlang",
+"serverHome": ".miniserver/home",
 // Enable URL rewriting support
 "rewrites": true,
 // Enable debug/verbose output — set to true for local debugging

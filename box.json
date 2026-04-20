@@ -18,8 +18,7 @@
 	"contributors": [],
 	"ignore": [],
 	"devDependencies": {
-		"testbox": "*",
-		"commandbox-cfformat": "*"
+		"testbox": "*"
 	},
 	"installPaths": {},
 	"dependencies": {},
@@ -27,6 +26,6 @@
 		"postInstall": "pathExists .env || cp .env.example .env && package set ignore=[]"
 	},
 	"testbox": {
-		"runner": "http://localhost:8080/tests/runner.cfm"
+		"runner": "http://localhost:59700/tests/runner.cfm"
 	}
 }

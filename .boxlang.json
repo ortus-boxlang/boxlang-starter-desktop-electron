@@ -9,8 +9,6 @@
  * ${env.variablename:defaultValue} - The value of a valid environment variable or the default value. Example: ${env.CFCONFIG_HOME:/etc/cfconfig}
  */
 {
-	// The version of the runtime
-	"version": "1.4.0+42",
 	// Extensions BoxLang will process as classes
 	"validClassExtensions": [
 		"bx",
@@ -59,7 +57,7 @@
 	// This will apply to ALL applications unless overridden in the Application.cfc
 	"sessionStorage": "memory",
 	// A collection of BoxLang mappings, the key is the prefix and the value is the directory
-	// The key can also be a struct containing a "path" and "external" property 
+	// The key can also be a struct containing a "path" and "external" property
 	// A non-external mapping will not be used in the web runtimes to resolve incoming file paths
 	"mappings": {
 		"/": "${user-dir}"

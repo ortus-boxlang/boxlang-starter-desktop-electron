@@ -2,7 +2,7 @@
 	// This puts the entire runtime in debug mode
 	// Which will produce lots of debug output and metrics
 	// Also the debugging error template will be used if turned on
-	"debugMode": "${BOXLANG_DEBUG:false}",
+	"debugMode": false,
 	// This setting if enabled will remove all the class files from the class generation directory
 	// This is useful for debugging and testing, but not recommended for production
 	"clearClassFilesOnStartup": true,
@@ -13,7 +13,7 @@
 	// This enables the runnable loader's cache on disk for compiled BoxLang classes
 	// This means that it will load a Boxlang class and never inspect the file again
 	// Turn this on for production, but off for development so you can see your changes
-	"trustedCache": "${BOXLANG_TRUSTED_CACHE:false}",
+	"trustedCache": true,
 	// The default timezone for the runtime; defaults to the JVM timezone if empty
 	// Please use the IANA timezone database values
 	"timezone": "UTC",
@@ -25,9 +25,7 @@
 			"path": "${user-dir}/app",
 			"external": false
 		},
-		"/public": "${user-dir}/public",
-		"/testbox": "${user-dir}/lib/testbox",
-		"/tests": "${user-dir}/tests"
+		"/public": "${user-dir}/public"
 	},
 	// A collection of BoxLang module directories, they must be absolute paths or expanded paths
 	"modulesDirectory": [

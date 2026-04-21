@@ -467,7 +467,7 @@ export class BoxLang {
         this.stop();
         dialog.showErrorBox(
             'Server Startup Timeout',
-            `BoxLang MiniServer did not become reachable within ${STARTUP_TIMEOUT_MS / 1000} seconds.\n\nChecked URL: ${serverUrl}\nConfig: ${this.globalSettings.serverConfig.configPath}\n\nVerify miniserver.json and try restarting the app.`
+            `BoxLang MiniServer did not become reachable within ${STARTUP_TIMEOUT_MS / 1000} seconds.\n\nChecked URL: ${serverUrl}\n\nVerify miniserver.json and try restarting the app.`
         );
     }
 

@@ -33,7 +33,7 @@ export class AppMenu {
 
         const template = [
             // macOS app menu (first menu)
-            ...(isMac ? [{
+            ...( isMac ? [ {
                 label: app.getName(),
                 submenu: [
                     { role: 'about' },
@@ -52,7 +52,7 @@ export class AppMenu {
                         }
                     }
                 ]
-            }] : []),
+            } ] : [] ),
             {
                 label: 'File',
                 submenu: [
@@ -81,22 +81,21 @@ export class AppMenu {
                     { type: 'separator' },
                     {
                         label: 'Restart BoxLang Server',
-                        accelerator: 'CmdOrCtrl+Shift+B',
                         click: () => callbacks.restartBoxLang?.()
                     },
                     { type: 'separator' },
                     // On non-Mac, put Quit in File menu
-                    ...(!isMac ? [{
+                    ...( !isMac ? [ {
                         label: 'Quit',
                         accelerator: 'Ctrl+Q',
                         click: () => {
                             callbacks.quit?.();
                         }
-                    }] : [{
+                    } ] : [ {
                         label: 'Close Window',
                         accelerator: 'Cmd+W',
                         click: () => callbacks.closeWindow?.()
-                    }])
+                    } ] )
                 ]
             },
             {

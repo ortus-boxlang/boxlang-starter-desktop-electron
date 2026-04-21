@@ -1,184 +1,206 @@
-# BoxLang Electron Starter
+# ⚡ BoxLang Desktop Electron Starter App
 
-A starter template for building cross-platform desktop applications with BoxLang, Electron, Vite, and Alpine.js.
+```
+|:------------------------------------------------------:|
+| ⚡︎ B o x L a n g ⚡︎
+| Dynamic : Modular : Productive
+|:------------------------------------------------------:|
+```
 
-The app runs a local BoxLang MiniServer and loads it inside an Electron window, so you get a native desktop shell around a BoxLang application without introducing a second backend stack.
+<blockquote>
+ Copyright Since 2023 by Ortus Solutions, Corp
+ <br>
+ <a href="https://www.boxlang.io">www.boxlang.io</a> |
+ <a href="https://www.ortussolutions.com">www.ortussolutions.com</a>
+</blockquote>
 
-## Features
+<p>&nbsp;</p>
 
-- BoxLang MiniServer embedded as the local application runtime.
-- Electron window, menu, tray, notifications, and native integration hooks.
-- Vite-powered frontend assets with a fast development loop.
-- Alpine.js for lightweight client-side interactivity.
-- electron-builder packaging for macOS, Windows, and Linux.
+🚀 **Production-ready runtime** to build desktop apps with BoxLang, Electron, and Vite from one starter project.
 
-## Prerequisites
+## What This Starter Gives You
 
-| Tool | Version | Notes |
-| --- | --- | --- |
-| Node.js | 18+ | Required for Electron, Vite, and packaging. |
-| BoxLang | Current CLI | Needed for development fallback and packaging the MiniServer. |
+- BoxLang MiniServer running locally inside the desktop app
+- Electron shell with menu, tray, shortcuts, and native window lifecycle
+- Vite build pipeline for JS and SCSS assets
+- Simple full packaging flow for macOS, Windows, and Linux
 
-Packaged app users do not need BoxLang installed if you distribute the app with `npm run package:full`.
+## How it works
+
+### Architecture diagram
+
+```mermaid
+flowchart LR
+ A[Electron Main.js] --> B[BoxLang.js Process Manager]
+ B --> C[miniserver.json]
+ B --> D[BoxLang MiniServer]
+ D --> E[public/Application.bx]
+ D --> F[public/index.bxm]
+ F --> G[ViteHelper.bx]
+ G --> H[Vite Dev Server or Built Assets]
+ A --> I[BrowserWindow]
+ I --> D
+```
+
+### Runtime flow
+
+1. Electron starts from `app/electron/Main.js`.
+2. `Main.js` wires app modules: `AppMenu`, `TrayMenu`, `Shortcuts`, and `BoxLang`.
+3. `BoxLang.js` starts MiniServer using `miniserver.json`.
+4. Electron waits until the server URL is reachable, then loads it in the main window.
+
+### MiniServer behavior
+
+- Packaged runtime location: `runtime/bin` and `runtime/lib`.
+- Packager script: `runtime/Package.bx`.
+- Target version source: `.bvmrc`.
+- Startup preference: packaged MiniServer first, global `boxlang-miniserver` as fallback.
+- Unix self-heal: execute permissions are applied automatically when needed.
+- `miniserver.json` is your main local server control file in development (host, port, webRoot, rewrites, debug, envFile).
+
+### Runtime config files (dev vs production)
+
+- `.boxlang-dev.json`: development runtime settings (debug and cache behavior), plus test mappings.
+- `.boxlang.json`: production/runtime defaults for packaged execution.
+- Both files already include the app mappings below, so your classes and templates resolve out of the box.
+
+```json
+"/app": {
+ "path": "${user-dir}/app",
+ "external": false
+},
+"/public": "${user-dir}/public"
+```
+
+### Config relationship diagram
+
+```mermaid
+flowchart TD
+ A[miniserver.json] -->|Boot MiniServer| B[BoxLang Runtime]
+ C[.boxlang-dev.json] -->|Dev runtime behavior| B
+ D[.boxlang.json] -->|Production runtime behavior| B
+ B --> E["/app mapping"]
+ B --> F["/public mapping"]
+```
+
+### Web app layer
+
+- `public/Application.bx`: application settings and datasource bootstrap.
+- `public/index.bxm`: default landing page.
+- `public/includes/helpers/ViteHelper.bx`: resolves assets for dev and production.
+
+### Frontend layer
+
+- Source: `resources/assets/js` and `resources/assets/scss`.
+- Build config: `vite.config.mjs`.
+- Output: `public/includes/resources`.
+
+### Desktop layer
+
+- `app/electron/Main.js`: lifecycle, logging, BrowserWindow creation.
+- `app/electron/BoxLang.js`: process control, health checks, restart strategy.
+- `app/electron/AppMenu.js`: app menu.
+- `app/electron/TrayMenu.js`: tray menu and status.
+- `app/electron/Shortcuts.js`: global keyboard shortcuts.
+
+### Electron Resources
+
+- `app/electron/Main.js`
+  - Electron app lifecycle: <https://www.electronjs.org/docs/latest/api/app>
+  - BrowserWindow: <https://www.electronjs.org/docs/latest/api/browser-window>
+  - NativeImage (icons): <https://www.electronjs.org/docs/latest/api/native-image>
+- `app/electron/BoxLang.js`
+  - Child processes: <https://nodejs.org/docs/latest/api/child_process.html>
+  - Process events/signals: <https://nodejs.org/docs/latest/api/process.html>
+- `app/electron/AppMenu.js`
+  - Menu: <https://www.electronjs.org/docs/latest/api/menu>
+  - MenuItem: <https://www.electronjs.org/docs/latest/api/menu-item>
+- `app/electron/TrayMenu.js`
+  - Tray: <https://www.electronjs.org/docs/latest/api/tray>
+  - Menu integration with Tray: <https://www.electronjs.org/docs/latest/tutorial/tray>
+- `app/electron/Shortcuts.js`
+  - globalShortcut: <https://www.electronjs.org/docs/latest/api/global-shortcut>
+  - Accelerator keys: <https://www.electronjs.org/docs/latest/api/accelerator>
 
 ## Quick Start
 
+### Prerequisites
+
+- BoxLang CLI (Use our [Quick Installer](https://boxlang.ortusbooks.com/getting-started/installation/boxlang-quick-installer) or [BoxLang Version Manager](https://boxlang.ortusbooks.com/getting-started/installation/boxlang-version-manager-bvm))
+- Node.js 25+
+- Java 21+ (required on every machine that runs the app)
+
+> Important: this starter packages the BoxLang MiniServer runtime, but it does not package a JRE/JDK. Java 21+ must already be installed on the host machine.
+
+### Run in development
+
 ```bash
+# Install BoxLang dependencies
+box install
+# Install Node dependencies
 npm install
+# Start Vite and Electron
 npm run dev
 ```
 
-`npm run dev` starts Vite first, waits for the dev server port, and then launches Electron. Electron starts the BoxLang MiniServer and loads the local BoxLang app after the server responds over HTTP.
-
-## Configuration Model
-
-- `miniserver.json` is the authority for BoxLang MiniServer settings such as host, port, webroot, serverHome, rewrites, and debug defaults.
-- `.bvmrc` is the authority for which MiniServer version gets packaged by `.miniserver/Package.bx`.
-- `app/electron/Main.js` and `app/electron/BoxLang.js` consume those values plus explicit environment overrides.
-- Electron writes `.miniserver/runtime/miniserver.runtime.json` before spawn so developers can keep comments in `miniserver.json` even when the active MiniServer binary expects plain JSON.
-
-Supported environment overrides:
-
-| Variable | Purpose |
-| --- | --- |
-| `BOXLANG_MINISERVER_HOST` | Override server host. |
-| `BOXLANG_MINISERVER_PORT` | Override server port. |
-| `BOXLANG_MINISERVER_WEBROOT` | Override server webroot. |
-| `BOXLANG_MINISERVER_SERVER_HOME` | Override the MiniServer home directory. |
-| `BOXLANG_MINISERVER_REWRITES` | Override rewrite support. |
-| `BOXLANG_MINISERVER_DEBUG` | Override debug mode. |
-| `VITE_HOST` | Override the Vite host used by `ViteHelper.bx`. |
-| `VITE_PROTOCOL` | Override the Vite protocol used by `ViteHelper.bx`. |
-
-## Development Workflow
-
-### Run everything
-
-```bash
-npm run dev
-```
-
-This starts Vite and Electron together.
-
-### Run Electron only
-
-```bash
-npm run start
-```
-
-Use this only when the Vite dev server is already running.
-
-### Run a production preview
-
-```bash
-npm run prod
-```
-
-This builds frontend assets and launches Electron against the built output.
-
-## Packaging Workflow
-
-### Package the MiniServer
-
-```bash
-npm run package:miniserver
-```
-
-This reads `.bvmrc`, downloads the requested BoxLang MiniServer, and extracts it to `.miniserver/bin/` and `.miniserver/lib/`.
-
-### Force a fresh MiniServer download
-
-```bash
-npm run package:miniserver:force
-```
-
-### Build the desktop app
-
-```bash
-npm run package
-```
-
-### Full packaging flow
+### Build and package app binaries
 
 ```bash
 npm run package:full
 ```
 
-This packages the MiniServer first and then builds the Electron distributable.
+This command packages MiniServer and then builds the desktop app. You will find installers and binaries in the `dist/` folder.
 
-## Where To Make Changes
+## Most Important Scripts
 
-| Area | Primary files |
-| --- | --- |
-| BoxLang templates and request flow | `public/index.bxm`, `public/Application.bx`, `public/views/` |
-| Frontend JavaScript | `resources/assets/js/` |
-| Frontend styles | `resources/assets/scss/` |
-| Electron desktop behavior | `app/electron/` |
-| BoxLang runtime configuration | `.boxlang.json`, `miniserver.json` |
+- `npm run dev`: Vite + Electron development mode
+- `npm run build`: Build frontend assets
+- `npm run package:miniserver`: Download MiniServer runtime from `.bvmrc`
+- `npm run package`: Package desktop app with electron-builder
+- `npm run package:full`: Full build path for distributable apps
 
-## Project Structure
+## Where Developers Usually Edit
 
-```text
-app/electron/              Electron main-process code
-.miniserver/               MiniServer packaging assets and downloaded runtime
-public/                    BoxLang webroot (Application.bx, index.bxm, views, includes)
-resources/assets/          Frontend source assets
-miniserver.json            Source-of-truth MiniServer configuration
-vite.config.mjs            Vite configuration
-package.json               Node scripts and Electron packaging config
-```
+- UI pages and templates: `public/`
+- Frontend behavior and styles: `resources/assets/`
+- Desktop behavior (window, tray, menu, shortcuts): `app/electron/`
+- Runtime config: `miniserver.json`
 
-Generated paths:
+## AI Skills Included
 
-```text
-.miniserver/runtime/       Generated plain-JSON runtime config for MiniServer startup
-public/includes/resources/ Vite build output
-dist/electron/             Packaged desktop artifacts
-.database/                 SQLite data created at runtime
-```
+This repository includes AI skills that help coding agents work with BoxLang patterns.
 
-## Available Scripts
+- Main skills folder: `.agents/skills/`
+- Mirror skills folder: `.claude/skills/`
+- Lock file for managed skill versions: `skills-lock.json`
 
-| Script | Description |
-| --- | --- |
-| `npm run dev` | Start Vite and Electron in development mode. |
-| `npm run start` | Start Electron only. |
-| `npm run build` | Build frontend assets with Vite. |
-| `npm run prod` | Build assets and run Electron against production output. |
-| `npm run preview` | Preview the Vite build in a browser. |
-| `npm run package` | Package the Electron app. |
-| `npm run package:miniserver` | Download and package the BoxLang MiniServer. |
-| `npm run package:miniserver:force` | Force a fresh MiniServer download. |
-| `npm run package:full` | Package the MiniServer and then the Electron app. |
-| `npm run generate:icons` | Generate `public/includes/icon.ico` for Windows packaging. |
+If you add new project conventions, update the relevant skill or instruction so agents use them consistently.
 
 ## Troubleshooting
 
-### BoxLang server will not start
+### Server fails to start
 
-- If you are using the global fallback runtime, make sure `boxlang-miniserver` is on your `PATH`.
-- If you are packaging for distribution, run `npm run package:miniserver` first.
-- If the configured port is already in use, change it in `miniserver.json` or override it with `BOXLANG_MINISERVER_PORT`.
+- Run `npm run package:miniserver` to ensure `runtime/bin` and `runtime/lib` exist.
+- If using global fallback, confirm `boxlang-miniserver` is on your `PATH`.
+- Verify `miniserver.json` port is available.
 
-### Comments in `miniserver.json`
+### Permission denied on macOS/Linux
 
-- Keep comments in `miniserver.json` if they help developers.
-- Electron will generate a plain runtime snapshot before spawn so older or stricter MiniServer binaries can still boot.
+- Re-run `npm run package:miniserver:force`.
+- If needed, run `chmod +x runtime/bin/boxlang-miniserver`.
 
-### Missing macOS icon warning
+### Missing production assets
 
-- The starter falls back to the PNG icon set if `public/includes/icon.icns` is missing.
-- Add a proper `public/includes/icon.icns` before shipping a signed macOS build.
-
-### Assets missing in production
-
-- Run `npm run build` before packaging if you are not using `npm run package`.
-- Make sure `public/includes/resources/.vite/manifest.json` exists after the build.
-
-## CI
-
-The GitHub Actions workflow uses `ortus-boxlang/setup-boxlang@1.3.0` and packages the desktop app on macOS, Windows, and Linux.
+- Run `npm run build` and confirm `public/includes/resources/.vite/manifest.json` exists.
 
 ## License
 
-Apache-2.0.
+Apache-2.0
+
+## Ortus Sponsors
+
+BoxLang is a professional open-source project and it is completely funded by the [community](https://patreon.com/ortussolutions) and [Ortus Solutions, Corp](https://www.ortussolutions.com).  Ortus Patreons get many benefits like a cfcasts account, a FORGEBOX Pro account and so much more.  If you are interested in becoming a sponsor, please visit our patronage page: [https://patreon.com/ortussolutions](https://patreon.com/ortussolutions)
+
+### THE DAILY BREAD
+
+ > "I am the way, and the truth, and the life; no one comes to the Father, but by me (JESUS)" Jn 14:1-12

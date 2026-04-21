@@ -1,182 +1,66 @@
-# BoxLang Electron Desktop Application - Copilot Instructions
+# BoxLang Electron Desktop Starter - Copilot Instructions
 
-## Quick Context
+## Project Context
 
-This is a BoxLang Electron desktop application that combines BoxLang runtime with Electron for cross-platform desktop development. The application uses Vite for asset bundling and features modular architecture.
+This repository is a BoxLang desktop starter that combines:
 
-## BoxLang Language Specifics
+- Electron for the desktop shell
+- BoxLang MiniServer for the local app runtime
+- Vite for frontend assets
+- Alpine.js and Bootstrap for UI behavior and styling
 
-### CLI Scripting and Arguments
-- **CLI Arguments**: Use `CliGetArgs()` to get parsed command line arguments
-- **Return Structure**: Returns a struct with `options` and `positionals` keys
-- **Example**:
-  ```boxlang
-  function main( args = [] ) {
-      var cliArgs = CliGetArgs();
-      // cliArgs.options contains --flag and --key=value arguments
-      // cliArgs.positionals contains non-flag arguments
+The starter runs a local HTTP server and loads it in Electron.
 
-      if ( cliArgs.options.force ) {
-          println( "Force flag is enabled" );
-      }
+## Architecture Snapshot
 
-      if ( arrayLen( cliArgs.positionals ) > 0 ) {
-          println( "First positional arg: " & cliArgs.positionals[1] );
-      }
-  }
-  ```
+- `app/electron/Main.js`: Electron bootstrap, window lifecycle, logging, and component wiring.
+- `app/electron/BoxLang.js`: BoxLang MiniServer process management, readiness checks, restart strategy.
+- `app/electron/AppMenu.js`: Application menu definitions.
+- `app/electron/TrayMenu.js`: System tray behavior and status menu.
+- `app/electron/Shortcuts.js`: Global keyboard shortcuts.
+- `public/Application.bx`: App settings, datasource config, and app startup hook.
+- `public/includes/helpers/ViteHelper.bx`: Vite dev/prod asset resolution helper.
+- `runtime/Package.bx`: MiniServer packager script that reads `.bvmrc`.
+- `miniserver.json`: MiniServer host, port, webroot, and runtime settings.
 
-### BoxLang Components
-- **Component Execution**: Use tag-style syntax `bx:componentName{ }` for executing components
-- **HTTP Component**: For HTTP requests, use:
-  ```boxlang
-  bx:http method="GET" url="#downloadUrl#" file="#filePath#" timeout="120" result="httpResult" {
-      // Component body content
-  }
-  ```
-- **Never use**: `new bx:http()` - this is incorrect syntax
-- **Component Reference**: https://boxlang.ortusbooks.com/boxlang-language/reference/components/net/http
+## Runtime and Packaging Rules
 
-### File Operations
-- **File Reading**: `fileRead( filePath ).trim()`
-- **File Writing**: `fileWrite( filePath, content )`
-- **File Existence**: `fileExists( filePath )`
-- **Directory Operations**: `directoryExists()`, `directoryDelete()`, `directoryList()`
-- **Path Operations**: `expandPath()` for relative to absolute paths
-
-## Application Architecture
-
-### Modular Structure
-- **Main Entry**: `app/electron/Main.js` - Electron main process coordinator
-- **TrayMenu.js**: System tray functionality
-- **AppMenu.js**: Application menu management
-- **Shortcuts.js**: Global keyboard shortcuts
-- **BoxLang.js**: BoxLang miniserver lifecycle management
-
-### Global Settings Object
-```javascript
-const globalSettings = {
-    serverPort: 59700,
-    serverDebugMode: true,
-    appName: "BoxLang Starter Desktop",
-    windowHeight: 800,
-    windowWidth: 1200,
-    projectRoot,
-    path,
-    loadingView: path.join( projectRoot, "public/views/loading.html" )
-};
-```
-
-### BoxLang MiniServer Packaging
-- **Version Control**: `.bvmrc` contains the BoxLang version to package
-- **Packager**: `.miniserver/Package.bx` downloads and extracts BoxLang miniserver
-- **Detection**: `BoxLang.js` detects packaged vs global miniserver installation
-- **Priority**: Packaged miniserver (`.miniserver/bin/`) takes precedence over global installation
+- The packaged runtime lives under `runtime/bin` and `runtime/lib`.
+- `BoxLang.js` prefers packaged MiniServer first, then falls back to global `boxlang-miniserver`.
+- Runtime packaging is managed by `runtime/Package.bx`, not `.miniserver/Package.bx`.
+- `.bvmrc` controls which MiniServer version is downloaded.
+- On Unix-like systems, executable permissions for `runtime/bin` are enforced during packaging and startup.
 
 ## Development Workflow
 
-### NPM Scripts
-- `npm run dev` - Development mode with hot reload
-- `npm run package:miniserver` - Download and package BoxLang miniserver
-- `npm run package:miniserver:force` - Force re-download miniserver
-- `npm run package:full` - Package miniserver then build Electron app
-- `npm run build` - Build Vite assets only
-- `npm run package` - Build and package Electron application
+- `npm run dev`: Start Vite and Electron for local development.
+- `npm run start`: Start Electron only (assumes Vite dev server is already running if needed).
+- `npm run build`: Build frontend assets into `public/includes/resources`.
+- `npm run package:miniserver`: Download/extract BoxLang MiniServer into `runtime/`.
+- `npm run package`: Build assets and create desktop packages.
+- `npm run package:full`: Package MiniServer first, then package the desktop app.
 
-### Asset Management
-- **Vite Output**: Assets build to `public/includes/resources/`
-- **ViteHelper.bx**: BoxLang integration for serving Vite-built assets
-- **Development**: Assets served from Vite dev server
-- **Production**: Assets served from built files
+## BoxLang Coding Rules
 
-## Key Integration Points
+- Use tag-based component syntax like `bx:http {}` and `bx:zip {}`.
+- Never instantiate components via `new bx:...`.
+- Keep spacing consistent with this codebase: spaces around parentheses, operators, and braces.
+- For CLI scripts, use `CliGetArgs()` and read `options` plus `positionals`.
+- Use `expandPath()` for path resolution and verify file/directory existence before destructive operations.
 
-### Electron ↔ BoxLang Communication
-- **Server Detection**: Electron waits for "BoxLang MiniServer started" message
-- **Error Handling**: BoxLang errors displayed in Electron dialogs
-- **Process Management**: Electron manages BoxLang miniserver lifecycle
+## AI Skills and Agent Assets
 
-### File Structure
-```
-app/electron/       # Electron main process modules
-.miniserver/        # BoxLang miniserver packaging
-├── Package.bx      # Packager script
-├── bin/           # Downloaded miniserver binaries (gitignored)
-└── lib/           # Downloaded miniserver libraries (gitignored)
-public/includes/
-├── resources/      # Vite build output (gitignored)
-└── helpers/
-    └── ViteHelper.bx # Vite integration helper
-public/views/       # BoxLang views/templates
-resources/assets/   # Source assets (JS, CSS, images)
-```
+This starter includes AI skill packs for coding agents.
 
-## Code Standards
+- Primary skills location: `.agents/skills/*/SKILL.md`
+- Mirror/compat location: `.claude/skills/*/SKILL.md`
+- Skill lock file: `skills-lock.json`
 
-### BoxLang
-- **Spacing**: Always use spaces around parentheses, brackets, braces, and operators
-- **Components**: Use tag-style syntax `bx:component{ }` not `new` syntax
-- **Arguments**: Access via `arguments.args` in main functions
-- **Error Handling**: Use `try/catch` with descriptive error types and messages
+When updating agent behavior or project guidance, keep references and folder names aligned with `.agents/skills`.
 
-### JavaScript (Electron)
-- **ES Modules**: Use `import/export` syntax
-- **Arrow Functions**: Prefer arrow functions for callbacks
-- **Destructuring**: Use object destructuring for globalSettings access
+## Contribution Notes for Agents
 
-### File Operations
-- **Paths**: Use `path.join()` for cross-platform path construction
-- **Existence Checks**: Always check file/directory existence before operations
-- **Cleanup**: Clean up temporary files (zip downloads, etc.)
-
-## Development Tips
-
-1. **CLI Tools**: BoxLang scripts can be powerful CLI tools using argument parsing
-2. **Component Usage**: Study BoxLang component documentation for proper syntax
-3. **Error Messages**: Provide helpful error messages that suggest solutions
-4. **Cross-platform**: Consider Windows, macOS, and Linux differences
-5. **Packaging**: Test both packaged and global miniserver scenarios
-
-## Common Patterns
-
-### CLI Argument Parsing
-```boxlang
-function main( args = [] ) {
-    var cliArgs = CliGetArgs();
-
-    // Access options (--flag, --key=value)
-    if ( cliArgs.options.force ) {
-        println( "Force mode enabled" );
-    }
-
-    var configFile = cliArgs.options.config ?: "default.json";
-    println( "Using config: " & configFile );
-
-    // Access positional arguments
-    for ( var path in cliArgs.positionals ) {
-        println( "Processing: " & path );
-    }
-}
-```
-
-### HTTP Downloads
-```boxlang
-bx:http method="GET" url="#downloadUrl#" file="#localPath#" timeout="120" result="result" {
-    // Optional: HTTP headers or body content
-}
-
-if ( result.statusCode != "200" ) {
-    throw( type="DownloadError", message="Download failed", detail="HTTP " & result.statusCode );
-}
-```
-
-### File Extraction
-```boxlang
-// Extract ZIP file
-zip action="unzip" file="#zipPath#" destination="#extractPath#" overwrite="true";
-
-// Verify extraction
-if ( !directoryExists( expectedDir ) ) {
-    throw( type="ExtractionError", message="Extraction failed" );
-}
-```
+- Preserve modular boundaries in `app/electron/*` instead of moving logic into a single file.
+- Keep process lifecycle safety: startup timeout, readiness checks, and graceful shutdown behavior.
+- Preserve cross-platform behavior for macOS, Windows, and Linux (icons, shortcuts, packaging targets).
+- Do not remove fallback behavior between packaged and global MiniServer unless explicitly requested.

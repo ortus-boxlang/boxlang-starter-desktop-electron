@@ -58,9 +58,19 @@ This starter includes AI skill packs for coding agents.
 
 When updating agent behavior or project guidance, keep references and folder names aligned with `.agents/skills`.
 
+## Packaging Tool
+
+This project uses **Electron Forge** for building distributables (`forge.config.cjs`).
+
+- MCP docs reference: <https://www.electronforge.io/~gitbook/mcp>
+- Config file: `forge.config.cjs` (CommonJS — required for Forge compatibility).
+- `asar` is always `false` — BoxLang MiniServer is spawned as a real filesystem executable and cannot be inside an asar archive.
+- Windows installer uses Squirrel (Forge default), not NSIS.
+
 ## Contribution Notes for Agents
 
 - Preserve modular boundaries in `app/electron/*` instead of moving logic into a single file.
 - Keep process lifecycle safety: startup timeout, readiness checks, and graceful shutdown behavior.
 - Preserve cross-platform behavior for macOS, Windows, and Linux (icons, shortcuts, packaging targets).
 - Do not remove fallback behavior between packaged and global MiniServer unless explicitly requested.
+- Never enable `asar` in `forge.config.cjs` — it will break MiniServer process spawning.

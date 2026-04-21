@@ -149,15 +149,50 @@ npm run dev
 npm run package:full
 ```
 
-This command packages MiniServer and then builds the desktop app. You will find installers and binaries in the `dist/` folder.
+This command packages MiniServer and then builds the desktop app. You will find installers and binaries in the `dist/electron/` folder.
+
+To target a specific platform explicitly:
+
+```bash
+npm run package:mac    # macOS
+npm run package:win    # Windows
+npm run package:linux  # Linux
+```
+
+> Packaging is handled by [Electron Forge](https://www.electronforge.io). Configuration lives in `forge.config.cjs`.
+
+### Output artifacts per platform
+
+| Platform | Maker | Output | Notes |
+|----------|-------|--------|-------|
+| macOS | DMG | `.dmg` | Primary macOS installer |
+| macOS | PKG | `.pkg` | Flat package / Mac App Store — only built when `MAC_SIGNING_IDENTITY` is set |
+| All | ZIP | `.zip` | Archive fallback; produced on every platform |
+| Windows | Squirrel | `.exe` | No-admin, no-prompt installer |
+| Linux | deb | `.deb` | Debian / Ubuntu |
+| Linux | rpm | `.rpm` | RHEL / Fedora |
+| Linux | Flatpak | `.flatpak` | Sandboxed, distribution-agnostic |
+
+### Building Linux packages on macOS
+
+`.deb` can be produced locally on macOS for testing with Homebrew tools:
+
+```bash
+brew install dpkg fakeroot
+```
+
+`.rpm` and `.flatpak` require a real Linux host (`rpmbuild` and `flatpak-builder` depend on Linux filesystem paths). Build those via CI (`ubuntu-latest`) or a Linux VM/Docker.
 
 ## Most Important Scripts
 
 - `npm run dev`: Vite + Electron development mode
 - `npm run build`: Build frontend assets
 - `npm run package:miniserver`: Download MiniServer runtime from `.bvmrc`
-- `npm run package`: Package desktop app with electron-builder
-- `npm run package:full`: Full build path for distributable apps
+- `npm run package`: Build assets and package the desktop app with Electron Forge (current platform)
+- `npm run package:mac`: Build and package for macOS (`.dmg`, `.pkg`, `.zip`)
+- `npm run package:win`: Build and package for Windows (Squirrel `.exe`, `.zip`)
+- `npm run package:linux`: Build and package for Linux (`.deb`, `.rpm`, `.flatpak`, `.zip`)
+- `npm run package:full`: Package MiniServer first, then build and package the desktop app
 
 ## Where Developers Usually Edit
 

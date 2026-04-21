@@ -1,70 +1,346 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Loading...</title>
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-            background-size: 600% 600%;
-            animation: boxlangGradient 15s ease infinite;
-            color: #00ffae;
-        }
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>BoxLang Desktop - Loading</title>
+	<style>
+		:root {
+			--bl-primary: #00ffae;
+			--bl-primary-light: #33ffbd;
+			--bl-primary-dark: #00cc8c;
+			--bl-navy: #1a1a2e;
+			--bl-slate: #16213e;
+			--bl-dark-bg: #0f1419;
+			--bl-text: #e0e0e0;
+			--bl-muted: rgba(224, 224, 224, 0.8);
+		}
 
-        @keyframes boxlangGradient {
-            0% {
-                background-position: 0% 50%;
-            }
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
 
-            50% {
-                background-position: 100% 50%;
-            }
+		body {
+			display: grid;
+			place-items: center;
+			min-height: 100vh;
+			width: 100%;
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
+				'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+			background: linear-gradient(135deg, #0f1419 0%, #1a1a2e 50%, #16213e 100%);
+			background-size: 400% 400%;
+			animation: boxlangGradient 15s ease infinite;
+			color: var(--bl-text);
+			overflow: hidden;
+			padding: 1.5rem;
+		}
 
-            100% {
-                background-position: 0% 50%;
-            }
-        }
+		@keyframes boxlangGradient {
+			0% {
+				background-position: 0% 50%;
+			}
 
-        .loader {
-            border: 16px solid rgba(255, 255, 255, 0.1);
-            border-top: 16px solid #00ffae;
-            border-radius: 50%;
-            width: 120px;
-            height: 120px;
-            animation: spin 2s linear infinite;
-            margin-top: 20px;
-        }
+			50% {
+				background-position: 100% 50%;
+			}
 
-        @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
+			100% {
+				background-position: 0% 50%;
+			}
+		}
 
-            100% {
-                transform: rotate(360deg);
-            }
-        }
+		.loading-shell {
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			text-align: center;
+			gap: 1rem;
+			z-index: 10;
+			width: min(460px, 100%);
+			padding: 2.25rem 1.75rem;
+			border-radius: 1.25rem;
+			background: linear-gradient(145deg, rgba(26, 33, 62, 0.72), rgba(15, 20, 25, 0.8));
+			border: 1px solid rgba(0, 255, 174, 0.18);
+			box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+			backdrop-filter: blur(8px);
+		}
 
-        .loading-text {
-            font-size: 2rem;
-            font-weight: 600;
-            letter-spacing: 0.5px;
-        }
-    </style>
+		.logo-wrap {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 86px;
+			height: 86px;
+			border-radius: 16px;
+			background: rgba(0, 255, 174, 0.04);
+			border: 1px solid rgba(0, 255, 174, 0.35);
+			animation: fadeInDown 0.8s ease-out;
+		}
+
+		.logo {
+			width: 48px;
+			height: 48px;
+			filter: drop-shadow(0 0 18px rgba(0, 255, 174, 0.45));
+		}
+
+		.spinner {
+			position: relative;
+			width: 96px;
+			height: 96px;
+			margin: 0.5rem 0 0.75rem;
+			animation: fadeInUp 0.8s ease-out 0.2s backwards;
+		}
+
+		.spinner::before {
+			content: '';
+			position: absolute;
+			inset: 0;
+			border-radius: 50%;
+			background:
+				conic-gradient(from 90deg, var(--bl-primary) 0deg, var(--bl-primary-light) 110deg, rgba(255, 255, 255, 0.14) 280deg, rgba(255, 255, 255, 0.08) 360deg);
+			mask: radial-gradient(farthest-side, transparent calc(100% - 7px), #000 calc(100% - 6px));
+			animation: spin 1.25s linear infinite;
+		}
+
+		.spinner::after {
+			content: '';
+			position: absolute;
+			inset: 14px;
+			border-radius: 50%;
+			border: 1px solid rgba(255, 255, 255, 0.08);
+			background: radial-gradient(circle at 35% 30%, rgba(0, 255, 174, 0.08), rgba(0, 255, 174, 0.01) 65%);
+		}
+
+		.loading-text {
+			font-size: clamp(1.8rem, 3vw, 2.25rem);
+			font-weight: 700;
+			line-height: 1.1;
+			letter-spacing: -0.01em;
+			margin-top: 0.25rem;
+			color: var(--bl-primary-light);
+			animation: fadeIn 1s ease-out 0.4s backwards;
+		}
+
+		.loading-subtext {
+			font-size: 1.06rem;
+			color: var(--bl-muted);
+			font-weight: 500;
+			letter-spacing: 0.02em;
+			animation: fadeIn 1s ease-out 0.55s backwards;
+		}
+
+		.status-indicator {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 0.6rem;
+			margin-top: 0.6rem;
+			padding: 0.55rem 0.95rem;
+			font-size: 0.96rem;
+			font-weight: 500;
+			color: var(--bl-text);
+			border-radius: 999px;
+			background: rgba(15, 20, 25, 0.6);
+			border: 1px solid rgba(0, 255, 174, 0.14);
+			animation: fadeIn 1s ease-out 0.75s backwards;
+		}
+
+		.status-dot {
+			width: 9px;
+			height: 9px;
+			border-radius: 50%;
+			background: var(--bl-primary);
+			box-shadow: 0 0 0 0 rgba(0, 255, 174, 0.65);
+			animation: pulse 1.6s ease-in-out infinite;
+		}
+
+		.progress-track {
+			position: relative;
+			width: min(260px, 80%);
+			height: 4px;
+			margin-top: 0.25rem;
+			border-radius: 999px;
+			overflow: hidden;
+			background: rgba(255, 255, 255, 0.12);
+		}
+
+		.progress-bar {
+			position: absolute;
+			top: 0;
+			left: -45%;
+			height: 100%;
+			width: 45%;
+			border-radius: 999px;
+			background: linear-gradient(90deg, rgba(0, 255, 174, 0), var(--bl-primary), rgba(51, 255, 189, 0.95));
+			animation: loadingSweep 1.4s ease-in-out infinite;
+		}
+
+		@keyframes loadingSweep {
+			0% {
+				left: -45%;
+			}
+
+			100% {
+				left: 100%;
+			}
+		}
+
+		@keyframes spin {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+
+
+		@keyframes fadeInDown {
+			from {
+				opacity: 0;
+				transform: translateY(-20px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		@keyframes fadeInUp {
+			from {
+				opacity: 0;
+				transform: translateY(20px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+			}
+
+			to {
+				opacity: 1;
+			}
+		}
+
+		@keyframes pulse {
+			0% {
+				box-shadow: 0 0 0 0 rgba(0, 255, 174, 0.7);
+			}
+
+			70% {
+				box-shadow: 0 0 0 10px rgba(0, 255, 174, 0);
+			}
+
+			100% {
+				box-shadow: 0 0 0 0 rgba(0, 255, 174, 0);
+			}
+		}
+
+		.bg-shape {
+			position: fixed;
+			opacity: 0.05;
+			pointer-events: none;
+		}
+
+		.shape-1 {
+			width: 400px;
+			height: 400px;
+			background: radial-gradient(circle, var(--bl-primary) 0%, transparent 70%);
+			top: -200px;
+			right: -200px;
+			animation: float 20s ease-in-out infinite;
+		}
+
+		.shape-2 {
+			width: 300px;
+			height: 300px;
+			background: radial-gradient(circle, var(--bl-primary) 0%, transparent 70%);
+			bottom: -150px;
+			left: -150px;
+			animation: float 25s ease-in-out infinite reverse;
+		}
+
+		@keyframes float {
+
+			0%,
+			100% {
+				transform: translateY(0px);
+			}
+
+			50% {
+				transform: translateY(50px);
+			}
+		}
+
+		@media (max-width: 768px) {
+			.loading-shell {
+				padding: 1.85rem 1.2rem;
+				border-radius: 1rem;
+			}
+
+			.loading-text {
+				font-size: 1.7rem;
+			}
+
+			.spinner {
+				width: 82px;
+				height: 82px;
+			}
+
+			.logo-wrap {
+				width: 74px;
+				height: 74px;
+			}
+
+			.logo {
+				width: 42px;
+				height: 42px;
+			}
+		}
+
+		@media (prefers-reduced-motion: reduce) {
+			* {
+				animation-duration: 0.01ms !important;
+				animation-iteration-count: 1 !important;
+				transition-duration: 0.01ms !important;
+			}
+		}
+	</style>
 </head>
 
 <body>
-    <div class="loading-text">Loading BoxLang Starter Desktop</div>
-    <div class="loader"></div>
+	<div class="bg-shape shape-1"></div>
+	<div class="bg-shape shape-2"></div>
+
+	<div class="loading-shell">
+		<div class="logo-wrap">
+			<img src="includes/images/boxlang-icon-full-L.svg" alt="BoxLang Logo" width="50" />
+		</div>
+
+		<div class="spinner"></div>
+
+		<div class="loading-text">BoxLang Desktop</div>
+		<div class="loading-subtext">Initializing Application</div>
+		<div class="progress-track" aria-hidden="true">
+			<div class="progress-bar"></div>
+		</div>
+
+		<div class="status-indicator">
+			<div class="status-dot"></div>
+			<span>Starting BoxLang Server...</span>
+		</div>
+	</div>
 </body>
 
 </html>

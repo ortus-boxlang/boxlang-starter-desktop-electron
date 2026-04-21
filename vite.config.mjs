@@ -8,6 +8,9 @@ export default defineConfig( {
     // Root directory where Vite will look for files
     root: '.',
 
+    // Avoid recursive copy: outDir is inside public/, so disable Vite publicDir copying.
+    publicDir: false,
+
     // Entry points for your assets
     build: {
         // Output directory for built assets (separate from electron-builder)
@@ -24,7 +27,8 @@ export default defineConfig( {
             input: {
                 // Main entry points
                 app: resolve( __dirname, 'resources/assets/js/app.js' ),
-                styles: resolve( __dirname, 'resources/assets/scss/app.scss' )
+                styles: resolve( __dirname, 'resources/assets/scss/app.scss' ),
+                theme: resolve( __dirname, 'resources/assets/scss/boxlang-theme.scss' )
             },
             output: {
                 // Configure output file names
@@ -79,7 +83,8 @@ export default defineConfig( {
             '@': resolve( __dirname, 'resources/assets' ),
             '@js': resolve( __dirname, 'resources/assets/js' ),
             '@scss': resolve( __dirname, 'resources/assets/scss' ),
-            '@fonts': resolve( __dirname, 'resources/assets/fonts' )
+            '@fonts': resolve( __dirname, 'resources/assets/fonts' ),
+            '@images': resolve( __dirname, 'public/includes/images' )
         }
     },
 

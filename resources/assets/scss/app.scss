@@ -4,6 +4,9 @@
 // Import SCSS modules
 @use "sass:color";
 
+// Import BoxLang theme (includes Bootstrap 5 and custom components)
+@import "boxlang-theme.scss";
+
 // Import any external fonts or libraries
 // @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 

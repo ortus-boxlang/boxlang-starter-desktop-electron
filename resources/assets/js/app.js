@@ -1,6 +1,9 @@
 // Import styles
 import '../scss/app.scss';
 
+// Import Bootstrap JS
+import * as Bootstrap from 'bootstrap';
+
 // Import Alpine.js
 import Alpine from 'alpinejs';
 

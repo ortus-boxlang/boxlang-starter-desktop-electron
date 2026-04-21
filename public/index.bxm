@@ -1,98 +1,296 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-bs-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BoxLang Desktop Application</title>
-    <!-- Vite CSS Assets -->
-    <bx:output>#application.viteHelper.styles( "styles" )#</bx:output>
-
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>BoxLang Desktop Application</title>
+	<!-- Vite CSS Assets (includes Bootstrap 5 + BoxLang theme) -->
+	<bx:output>#application.viteHelper.styles( "styles" )#</bx:output>
 </head>
-<body>
-    <div class="container">
-        <div class="card">
-            <div class="card-header">
-                <h1>Build Desktop Apps with BoxLang</h1>
-            </div>
-            <div class="card-body">
-                <p>This starter combines a BoxLang runtime, an Electron shell, and a Vite-powered frontend workflow.</p>
-                <ul>
-                    <li><strong>BoxLang</strong> handles templates, routing, and server-side logic.</li>
-                    <li><strong>Electron</strong> provides the desktop window, menu, tray, and native integration.</li>
-                    <li><strong>Vite</strong> builds frontend assets and powers the development loop.</li>
-                </ul>
+<body class="desktop-home">
+	<!-- Navigation -->
+	<nav class="navbar navbar-expand-lg sticky-top app-navbar">
+		<div class="container-fluid">
+			<a class="navbar-brand app-brand" href="#" aria-label="BoxLang Desktop">
+				<img class="brand-logo brand-logo-dark" src="/includes/images/boxlang-logo-full-dark-L.svg" alt="BoxLang Desktop">
+				<img class="brand-logo brand-logo-light" src="/includes/images/boxlang-logo-full-light-L.svg" alt="BoxLang Desktop">
+			</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item">
+						<button id="themeToggleBtn" class="theme-toggle-btn" type="button" title="Toggle dark/light mode" aria-label="Toggle dark/light mode">
+							<span id="themeIcon" aria-hidden="true">🌙</span>
+						</button>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
 
-                <div class="mt-4">
-                    <button class="btn" onclick="showAlert()">Test JavaScript</button>
-                </div>
+	<!-- Main Content -->
+	<div class="container-lg py-5">
+		<!-- Hero Section -->
+		<div class="hero-section">
+			<div class="row align-items-center">
+				<div class="col-md-6">
+					<h1 class="display-5 hero-title">Professional Desktop Apps</h1>
+					<p class="lead hero-lead mb-4">Built with BoxLang, Electron & Vite</p>
+					<p class="hero-copy">Create powerful, native desktop applications using BoxLang's server-side logic with Electron's cross-platform capabilities.</p>
+					<div class="mt-4">
+						<a href="#features" class="btn btn-primary btn-lg">Explore Features</a>
+					</div>
+				</div>
+				<div class="col-md-6 text-center">
+					<img src="/includes/images/boxlang-icon-full-L.svg" alt="BoxLang Desktop" class="img-fluid hero-image" width="200">
+				</div>
+			</div>
+		</div>
 
-                <div class="mt-4" x-data="{ message: 'Alpine.js is working!' }">
-                    <h4>Alpine.js Test</h4>
-                    <p x-text="message"></p>
-                    <button class="btn" @click="message = 'Alpine.js clicked!'">Test Alpine.js</button>
-                </div>
+		<!-- Stats Section -->
+		<div class="row g-3 mb-5">
+			<div class="col-md-3">
+				<div class="stats-card">
+					<div class="stat-value">100%</div>
+					<div class="stat-label">Open Source</div>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="stats-card">
+					<div class="stat-value">🚀</div>
+					<div class="stat-label">Native Performance</div>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="stats-card">
+					<div class="stat-value">🎨</div>
+					<div class="stat-label">Beautiful UI</div>
+				</div>
+			</div>
+			<div class="col-md-3">
+				<div class="stats-card">
+					<div class="stat-value">⚡</div>
+					<div class="stat-label">Lightning Fast</div>
+				</div>
+			</div>
+		</div>
 
-                <div class="mt-4">
-                    <h3>Environment Info</h3>
-                    <p><strong>Development Mode:</strong> <bx:output>#application.viteHelper.isDev() ? 'Yes' : 'No'#</bx:output></p>
-                    <p><strong>Current Time:</strong> <bx:output>#now()#</bx:output></p>
-                    <bx:if condition="#application.viteHelper.isDev()#">
-                        <p><strong>Vite Dev Server:</strong> <bx:output>#application.viteHelper.devServerUrl()#</bx:output></p>
-                    </bx:if>
-                </div>
-            </div>
-        </div>
+		<!-- Features Section -->
+		<section id="features" class="mb-5">
+			<h2 class="mb-4">Stack & Features</h2>
+			<div class="row g-4">
+				<div class="col-md-4">
+					<div class="card feature-card">
+						<div class="card-body">
+							<h5 class="card-title">⚙️ BoxLang Runtime</h5>
+							<p class="card-text">Full-featured JVM language with modern syntax for templates, routing, and server-side logic.</p>
+							<code>miniserver.json</code>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="card feature-card">
+						<div class="card-body">
+							<h5 class="card-title">🖥️ Electron Shell</h5>
+							<p class="card-text">Native desktop window, system tray, menus, and OS integration with cross-platform support.</p>
+							<code>app/electron/</code>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-4">
+					<div class="card feature-card">
+						<div class="card-body">
+							<h5 class="card-title">⚡ Vite Assets</h5>
+							<p class="card-text">Next-generation frontend tooling with hot module replacement and optimized builds.</p>
+							<code>vite.config.mjs</code>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
 
-        <div class="card">
-            <div class="card-header">
-                <h2>Quick Start</h2>
-            </div>
-            <div class="card-body">
-                <h4>Development Workflow</h4>
-                <ol>
-                    <li>Run <code>npm install</code> once to install the project dependencies.</li>
-                    <li>Run <code>npm run dev</code> to start Vite and Electron together.</li>
-                    <li>Run <code>npm run start</code> only if Vite is already running.</li>
-                </ol>
+		<!-- Theme Showcase -->
+		<section class="mb-5">
+			<h2 class="mb-4">Theme Components</h2>
+			<div class="row g-4">
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header">
+							<h5 class="mb-0">Buttons</h5>
+						</div>
+						<div class="card-body">
+							<button class="btn btn-primary me-2">Primary</button>
+							<button class="btn btn-outline-primary me-2">Outline</button>
+							<button class="btn btn-secondary me-2">Secondary</button>
+							<button class="btn btn-success">Success</button>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header">
+							<h5 class="mb-0">Badges</h5>
+						</div>
+						<div class="card-body">
+							<span class="badge badge-boxlang me-2">BoxLang</span>
+							<span class="badge bg-success me-2">Active</span>
+							<span class="badge bg-warning me-2">Warning</span>
+							<span class="badge bg-danger">Error</span>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header">
+							<h5 class="mb-0">Interactive Test</h5>
+						</div>
+						<div class="card-body">
+							<div x-data="{ message: 'Alpine.js is ready!' }" class="mb-3">
+								<p class="mb-2" x-text="message"></p>
+								<button class="btn btn-primary btn-sm" @click="message = '✅ Alpine.js works perfectly!'">Test Alpine</button>
+							</div>
+							<button id="jsAlertBtn" class="btn btn-primary btn-sm" type="button">Test JavaScript</button>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header">
+							<h5 class="mb-0">Environment Info</h5>
+						</div>
+						<div class="card-body">
+							<p class="mb-2"><strong>Development:</strong> <bx:output>#application.viteHelper.isDev() ? '✅ Yes' : '❌ No'#</bx:output></p>
+							<p class="mb-2"><strong>Current Time:</strong> <bx:output>#dateTimeFormat(now(), 'HH:mm:ss')#</bx:output></p>
+							<bx:if condition="#application.viteHelper.isDev()#">
+								<p class="mb-0"><strong>Vite URL:</strong> <code class="vite-url-code">#application.viteHelper.devServerUrl()#</code></p>
+							</bx:if>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
 
-                <h4>First Feature Path</h4>
-                <ol>
-                    <li>Edit <code>public/index.bxm</code> or files under <code>public/views/</code> for BoxLang-rendered UI.</li>
-                    <li>Edit <code>resources/assets/js/</code> and <code>resources/assets/scss/</code> for frontend behavior and styles.</li>
-                    <li>Edit files under <code>app/electron/</code> for desktop-specific behavior such as menus, tray, and native shell features.</li>
-                </ol>
+		<!-- Developer Guide -->
+		<section class="mb-5">
+			<h2 class="mb-4">Developer Guide</h2>
+			<div class="row g-4">
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header">
+							<h5 class="mb-0">Development Workflow</h5>
+						</div>
+						<div class="card-body">
+							<ol class="mb-0">
+								<li>Run <code>npm install</code> to install dependencies</li>
+								<li>Run <code>npm run dev</code> to start development</li>
+								<li>Edit BoxLang files in <code>public/</code></li>
+								<li>Edit styles in <code>resources/assets/scss/</code></li>
+								<li>Edit desktop code in <code>app/electron/</code></li>
+							</ol>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-6">
+					<div class="card">
+						<div class="card-header">
+							<h5 class="mb-0">Build & Deploy</h5>
+						</div>
+						<div class="card-body">
+							<ul class="mb-0">
+								<li><code>npm run build</code> - Build frontend assets</li>
+								<li><code>npm run package:miniserver</code> - Package MiniServer</li>
+								<li><code>npm run package</code> - Create desktop build</li>
+								<li><code>npm run package:full</code> - Full build workflow</li>
+								<li><code>npm run lint:fix</code> - Format code</li>
+							</ul>
+						</div>
+					</div>
+				</div>
+			</div>
+		</section>
 
-                <h4>Packaging</h4>
-                <ul>
-                    <li>Run <code>npm run package:miniserver</code> to bundle the MiniServer version defined by <code>.bvmrc</code>.</li>
-                    <li>Run <code>npm run package</code> to create a desktop build.</li>
-                    <li>Run <code>npm run package:full</code> to do both in one command.</li>
-                </ul>
-            </div>
-        </div>
+		<!-- Resources -->
+		<section class="alert alert-info" role="alert">
+			<h5 class="alert-heading">📚 Resources</h5>
+			<p class="mb-2">Learn more about this stack:</p>
+			<ul class="mb-0">
+				<li><a href="https://www.boxlang.io" class="alert-link">BoxLang Website</a> - Modern JVM language</li>
+				<li><a href="https://www.electronjs.org" class="alert-link">Electron</a> - Build cross-platform desktop apps</li>
+				<li><a href="https://vitejs.dev" class="alert-link">Vite</a> - Next generation frontend tooling</li>
+				<li><a href="https://getbootstrap.com" class="alert-link">Bootstrap 5</a> - Responsive design framework</li>
+			</ul>
+		</section>
+	</div>
 
-        <div class="card">
-            <div class="card-header">
-                <h2>Runtime Notes</h2>
-            </div>
-            <div class="card-body">
-                <ul>
-                    <li><code>miniserver.json</code> is the source of truth for server settings.</li>
-                    <li>Electron generates a plain runtime config before spawn, so comments in <code>miniserver.json</code> stay safe for developers.</li>
-                    <li><code>.bvmrc</code> controls which MiniServer version is packaged for distribution.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
+	<!-- Footer -->
+	<footer class="border-top mt-5 py-4">
+		<div class="container-lg text-center">
+			<p class="text-muted mb-0">Built with <span class="text-boxlang">❤</span> using BoxLang, Electron & Vite</p>
+		</div>
+	</footer>
 
-    <!-- Vite JavaScript Assets -->
-    <bx:output>#application.viteHelper.scripts( "app" )#</bx:output>
+	<!-- Vite JavaScript Assets (includes Alpine.js + Bootstrap 5 JS) -->
+	<bx:output>#application.viteHelper.scripts( "app" )#</bx:output>
 
-    <script>
-        // Example JavaScript functions
-        function showAlert() {
-            alert('Hello from BoxLang + Electron + Vite!');
-        }
-    </script>
+	<script>
+		const THEME_STORAGE_KEY = 'boxlang-theme';
+
+		function getInitialTheme() {
+			try {
+				const storedTheme = localStorage.getItem( THEME_STORAGE_KEY );
+				if ( storedTheme === 'dark' || storedTheme === 'light' ) {
+					return storedTheme;
+				}
+			} catch ( error ) {
+				console.warn( 'Could not read theme preference from localStorage', error );
+			}
+
+			return 'dark';
+		}
+
+		function updateThemeIcon( theme ) {
+			const themeIcon = document.getElementById( 'themeIcon' );
+			if ( !themeIcon ) {
+				return;
+			}
+
+			themeIcon.textContent = theme === 'dark' ? '☀️' : '🌙';
+		}
+
+		function setTheme( theme ) {
+			const resolvedTheme = theme === 'light' ? 'light' : 'dark';
+			document.documentElement.setAttribute( 'data-bs-theme', resolvedTheme );
+			updateThemeIcon( resolvedTheme );
+
+			try {
+				localStorage.setItem( THEME_STORAGE_KEY, resolvedTheme );
+			} catch ( error ) {
+				console.warn( 'Could not persist theme preference to localStorage', error );
+			}
+		}
+
+		document.addEventListener( 'DOMContentLoaded', function() {
+			setTheme( getInitialTheme() );
+
+			const themeToggleBtn = document.getElementById( 'themeToggleBtn' );
+			if ( themeToggleBtn ) {
+				themeToggleBtn.addEventListener( 'click', function() {
+					const currentTheme = document.documentElement.getAttribute( 'data-bs-theme' ) === 'light' ? 'light' : 'dark';
+					setTheme( currentTheme === 'dark' ? 'light' : 'dark' );
+				} );
+			}
+
+			const jsAlertBtn = document.getElementById( 'jsAlertBtn' );
+			if ( jsAlertBtn ) {
+				jsAlertBtn.addEventListener( 'click', showAlert );
+			}
+		} );
+
+		function showAlert() {
+			alert( '🎉 BoxLang + Electron + Vite + Bootstrap = Awesome Desktop App!' );
+		}
+	</script>
 </body>
 </html>

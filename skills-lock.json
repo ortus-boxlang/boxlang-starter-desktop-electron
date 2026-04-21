@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "08a0ee8307d2fa5e36cd620ee6ce84d0e38e6e488c3ca7636485bc5da9c2745d"
     },
+    "boxlang-application-descriptor": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "f060db9e4cfd932f4977f70c079555362aadfcbdd2fca250a04d7f8fb471207a"
+    },
     "boxlang-async-programming": {
       "source": "ortus-boxlang/skills",
       "sourceType": "github",
@@ -125,6 +130,46 @@
       "source": "ortus-boxlang/skills",
       "sourceType": "github",
       "computedHash": "5bb1b501a9cda7cef5da616dbcc323492dbba5fcfdd6969f577f91fb379b7752"
+    },
+    "boxlang-runtime-aws-lambda": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "74696ba37c4dcdc763bb3a64259083f3775b8a0ed31b63383b099debf789064f"
+    },
+    "boxlang-runtime-chromebook": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "5070551dbe22556e5409056ba38ac6c1ab97e7ca8387279ed15f8e719488214c"
+    },
+    "boxlang-runtime-cli-scripting": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "e8a3704ba54ece31d36ceb52744a79618ba8be436018ef30aaf673291e20de96"
+    },
+    "boxlang-runtime-commandbox": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "8744cc111e9146cf929e0d2f5c4344f871a06ebfe69e8b7d5cb532b9c17274e2"
+    },
+    "boxlang-runtime-compiled-native-binaries": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "f93ecd36508887e39477c848f85e4fa566ad48a405aecac4bbfb82dfe40e7e97"
+    },
+    "boxlang-runtime-desktop": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "6813315e2d5a52cce4cbe0c1ebdcd9d76d21633653298b22c0619ec794e258d5"
+    },
+    "boxlang-runtime-github-actions": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "c0294a9f7175b4b29ec66ce225924fc495f9f315be50f9aa28dd736144636ca7"
+    },
+    "boxlang-runtime-miniserver": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "ccf5f29a2f33fc4aa67e753552fdd56fff2420fa3ca3581c1b4f15f4f796b301"
     },
     "boxlang-scheduled-tasks": {
       "source": "ortus-boxlang/skills",

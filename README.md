@@ -168,7 +168,7 @@ npm run package:linux  # Linux
 | macOS | DMG | `.dmg` | Primary macOS installer |
 | macOS | PKG | `.pkg` | Flat package / Mac App Store — only built when `MAC_SIGNING_IDENTITY` is set |
 | All | ZIP | `.zip` | Archive fallback; produced on every platform |
-| Windows | Squirrel | `.exe` | No-admin, no-prompt installer |
+| Windows | Squirrel | `.exe` | No-admin, no-prompt installer — requires Windows host (CI only); macOS produces `.zip` only |
 | Linux | deb | `.deb` | Debian / Ubuntu |
 | Linux | rpm | `.rpm` | RHEL / Fedora |
 | Linux | Flatpak | `.flatpak` | Sandboxed, distribution-agnostic |

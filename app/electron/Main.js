@@ -301,11 +301,12 @@ function updateComponentReferences () {
  * Show about dialog
  */
 function showAboutDialog () {
+	const appVersion = app.getVersion();
 	dialog.showMessageBox( mainWindow, {
 		type: 'info',
 		title: 'About ' + globalSettings.appName,
 		message: globalSettings.appName,
-		detail: `Version: 1.0.0\n${globalSettings.appName}\nBuilt with Electron and Vite\n\nServer Port: ${globalSettings.serverPort}\nDebug Mode: ${globalSettings.serverDebugMode ? 'Enabled' : 'Disabled'}`,
+		detail: `Version: ${appVersion}\n${globalSettings.appName}\nBuilt with Electron and Vite\n\nServer Port: ${globalSettings.serverPort}\nDebug Mode: ${globalSettings.serverDebugMode ? 'Enabled' : 'Disabled'}`,
 		buttons: [ 'OK' ],
         icon: nativeImage.createFromPath( resolveAsset( 'public', 'includes', 'icon.iconset', 'icon_128x128.png' ) )
 	} );

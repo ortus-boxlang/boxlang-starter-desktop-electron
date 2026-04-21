@@ -47,6 +47,7 @@ export class TrayMenu {
 
         if ( trayIcon.isEmpty() ) {
             // Fallback if the specific tray icon doesn't exist
+            console.warn( '[TrayMenu] Tray icon not found: public/includes/icon.iconset/icon_16x16.png' );
             return;
         }
 

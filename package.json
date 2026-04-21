@@ -38,10 +38,7 @@
 	"build": {
 		"productName": "BoxLang Starter Desktop",
 		"appId": "io.boxlang.starter",
-		"asar": true,
-		"asarUnpack": [
-			"runtime/**"
-		],
+		"asar": false,
 		"directories": {
 			"output": "dist/electron"
 		},

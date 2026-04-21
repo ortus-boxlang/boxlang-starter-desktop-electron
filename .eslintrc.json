@@ -25,10 +25,6 @@
 		],
 		"space-infix-ops": "error",
 		"space-before-blocks": "error",
-		"space-before-function-paren": [
-			"error",
-			"always"
-		],
 		"space-unary-ops": [
 			"error",
 			{

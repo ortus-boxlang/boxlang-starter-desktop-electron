@@ -29,14 +29,14 @@ export class Shortcuts {
     /**
      * Set references to external components
      */
-    setReferences( { mainWindow } ) {
+    setReferences ( { mainWindow } ) {
         this.mainWindow = mainWindow;
     }
 
     /**
      * Register global shortcuts
      */
-    register( callbacks = {} ) {
+    register ( callbacks = {} ) {
         // Quick show/hide application
         globalShortcut.register( 'CommandOrControl+Shift+L', () => {
             if ( this.mainWindow ) {
@@ -63,7 +63,7 @@ export class Shortcuts {
     /**
      * Unregister all global shortcuts
      */
-    unregister() {
+    unregister () {
         globalShortcut.unregisterAll();
     }
 }

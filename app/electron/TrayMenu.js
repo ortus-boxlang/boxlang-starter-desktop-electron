@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 import { Tray, Menu, nativeImage, shell } from 'electron';
-import path from 'path';
 
 /**
  * TrayMenu class - Manages system tray functionality

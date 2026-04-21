@@ -18,6 +18,7 @@
  */
 import { app, BrowserWindow, nativeImage, dialog } from "electron";
 import { fileURLToPath } from 'url';
+import { mkdirSync, appendFileSync } from 'fs';
 
 // Import our modular components
 import { AppMenu } from './AppMenu.js';
@@ -28,6 +29,73 @@ import { TrayMenu } from './TrayMenu.js';
 // Dynamic imports
 const path = await import( "path" );
 process.env.PATH = process.env.PATH + ":/usr/local/bin";
+
+let mainLogFilePath = null;
+
+function serializeLogArgs ( args ) {
+	return args.map( ( arg ) => {
+		if ( arg instanceof Error ) {
+			return `${arg.message}\n${arg.stack || ''}`;
+		}
+
+		if ( typeof arg === 'object' ) {
+			try {
+				return JSON.stringify( arg );
+			} catch {
+				return String( arg );
+			}
+		}
+
+		return String( arg );
+	} ).join( ' ' );
+}
+
+function appendMainLog ( level, args ) {
+	if ( !mainLogFilePath ) {
+		return;
+	}
+
+	try {
+		const line = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${serializeLogArgs( args )}\n`;
+		appendFileSync( mainLogFilePath, line, 'utf8' );
+	} catch {
+		// Ignore file logging failures to avoid breaking startup.
+	}
+}
+
+function setupMainProcessLogging () {
+	const originalConsole = {
+		log: console.log.bind( console ),
+		info: console.info.bind( console ),
+		warn: console.warn.bind( console ),
+		error: console.error.bind( console )
+	};
+
+	try {
+		app.setAppLogsPath();
+		const logsDir = app.getPath( 'logs' );
+		mkdirSync( logsDir, { recursive: true } );
+		mainLogFilePath = path.join( logsDir, 'main.log' );
+		appendMainLog( 'log', [ `==== App startup (pid ${process.pid}) ====` ] );
+	} catch ( error ) {
+		originalConsole.warn( 'Could not initialize file logging:', error.message );
+	}
+
+	[ 'log', 'info', 'warn', 'error' ].forEach( ( method ) => {
+		console[ method ] = ( ...args ) => {
+			appendMainLog( method, args );
+			originalConsole[ method ]( ...args );
+		};
+	} );
+
+	process.on( 'uncaughtException', ( error ) => {
+		appendMainLog( 'error', [ 'Uncaught exception', error ] );
+	} );
+
+	process.on( 'unhandledRejection', ( reason ) => {
+		appendMainLog( 'error', [ 'Unhandled rejection', reason ] );
+	} );
+}
 
 // Get the current file name
 const thisFileName = fileURLToPath( import.meta.url );
@@ -88,6 +156,9 @@ const globalSettings = {
 	loadingView: path.join( projectRoot, "public/views/loading.html" ),
 	isDevelopment
 };
+
+setupMainProcessLogging();
+console.log( '[BoxLang] Main process log file:', mainLogFilePath || 'not available' );
 
 // Set app name early (before app is ready)
 app.setName( globalSettings.appName );

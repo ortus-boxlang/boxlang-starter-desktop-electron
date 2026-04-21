@@ -10,8 +10,9 @@ WEB-INF
 .boxlang/config/.seed
 
 # MiniServer runtime home (logs, compiled classes, etc.)
-.miniserver/home/
-.miniserver/runtime/
+runtime/bin/**
+runtime/lib/**
+runtime/VERSION
 
 # Engines + Database + CBFS + Secrets
 .env

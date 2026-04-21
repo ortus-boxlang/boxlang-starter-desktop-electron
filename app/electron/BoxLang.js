@@ -17,7 +17,7 @@
  */
 import { spawn } from "child_process";
 import { dialog, Notification, app } from "electron";
-import { existsSync } from "fs";
+import { existsSync, chmodSync, accessSync, constants as fsConstants } from "fs";
 const path = await import( "path" );
 
 // Centralized configuration for timeouts and intervals
@@ -225,6 +225,27 @@ export class BoxLang {
     }
 
     /**
+     * Ensure the packaged miniserver command is executable on Unix-like systems.
+     * This self-heals older downloads that were extracted without +x permissions.
+     */
+    ensurePackagedCommandExecutable () {
+        if ( this.miniserverCommand.type !== 'packaged' || process.platform === 'win32' ) {
+            return;
+        }
+
+        try {
+            accessSync( this.miniserverCommand.command, fsConstants.X_OK );
+        } catch ( error ) {
+            try {
+                chmodSync( this.miniserverCommand.command, 0o755 );
+                console.log( `✅ Restored execute permission on packaged miniserver: ${this.miniserverCommand.command}` );
+            } catch ( chmodError ) {
+                console.warn( `⚠️  Could not set execute permission on packaged miniserver: ${chmodError.message}` );
+            }
+        }
+    }
+
+    /**
      * Get the current process
 	 *
      * @returns {ChildProcess|null} The BoxLang process
@@ -253,6 +274,8 @@ export class BoxLang {
 
         console.log( "Starting BoxLang mini server..." );
         console.log( `Using ${this.miniserverCommand.type} miniserver: ${this.miniserverCommand.command}` );
+
+        this.ensurePackagedCommandExecutable();
 
         this.clearRestartTimer();
         this.blockAutoRestart = false;

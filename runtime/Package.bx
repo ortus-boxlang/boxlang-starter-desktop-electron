@@ -171,22 +171,21 @@ class {
         println( "   - bin/" )
         println( "   - lib/" )
 
-        // Make bin files executable on Unix systems
+        // Make all bin files executable on Unix systems.
         if ( server.os.name contains "nix" || server.os.name contains "mac" ) {
-            var binFiles = directoryList( expandPath( "./bin" ), false, "name", "*.sh,boxlang-miniserver" )
-            for ( var file in binFiles ) {
-                var filePath = expandPath( "./bin/" & file )
-                try {
-                    var result = createObject( "java", "java.lang.ProcessBuilder" )
-                        .init( [ "chmod", "+x", filePath ] )
-                        .start()
-                        .waitFor()
-                    if ( result == 0 ) {
-                        println( "✅ Made " & file & " executable" )
-                    }
-                } catch ( any e ) {
-                    println( "⚠️  Could not make " & file & " executable: " & e.message )
+            try {
+                var chmodResult = createObject( "java", "java.lang.ProcessBuilder" )
+                    .init( [ "chmod", "-R", "+x", expandPath( "./bin" ) ] )
+                    .start()
+                    .waitFor()
+
+                if ( chmodResult == 0 ) {
+                    println( "✅ Made runtime/bin contents executable" )
+                } else {
+                    println( "⚠️  chmod returned non-zero exit code: " & chmodResult )
                 }
+            } catch ( any e ) {
+                println( "⚠️  Could not update executable permissions in runtime/bin: " & e.message )
             }
         }
     }

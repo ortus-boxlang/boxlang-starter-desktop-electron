@@ -80,7 +80,7 @@ const globalSettings = {
 	// Window Defaults
     appName: "BoxLang Starter Desktop",
     windowHeight: 1024,
-    windowWidth: 1280,
+    windowWidth: 1300,
     // Project paths
     projectRoot,
     path,

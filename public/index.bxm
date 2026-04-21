@@ -5,7 +5,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>BoxLang Desktop Application</title>
 	<!-- Vite CSS Assets (includes Bootstrap 5 + BoxLang theme) -->
-	<bx:output>#application.viteHelper.styles( "styles" )#</bx:output>
+	<bx:output>#application.viteHelper.styles( "app" )#</bx:output>
 </head>
 <body class="desktop-home">
 	<!-- Navigation -->

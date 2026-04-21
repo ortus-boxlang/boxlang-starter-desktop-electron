@@ -105,6 +105,7 @@ const thisDirName = path.dirname( thisFileName );
 const projectRoot = path.resolve( thisDirName, "../../" );
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
+const enableDevTools = isDevelopment || parseBoolean( process.env.BOXLANG_DEVTOOLS ) === true;
 
 // Global references to components and main window
 let mainWindow;
@@ -129,6 +130,9 @@ const APP_HOME_SOURCE = process.env.BOXLANG_HOME ? 'env BOXLANG_HOME' : 'default
 if( isDevelopment ) {
 	console.log( '[BoxLang] Running in development mode' );
 	console.log( '[BoxLang] App home (' + APP_HOME_SOURCE + '): ' + APP_HOME )
+}
+if ( enableDevTools && !isDevelopment ) {
+	console.log( '[BoxLang] DevTools enabled via BOXLANG_DEVTOOLS' );
 }
 
 const globalSettings = {
@@ -401,12 +405,12 @@ function createWindow () {
             nodeIntegration: false,
             contextIsolation: true,
             enableRemoteModule: false,
-			devTools: isDevelopment
+			devTools: enableDevTools
         }
     } );
 
-	// Open dev tools automatically in development
-	if ( isDevelopment ) {
+	// Open dev tools automatically when enabled.
+	if ( enableDevTools ) {
 		mainWindow.webContents.openDevTools();
 	}
 

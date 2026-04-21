@@ -45,6 +45,10 @@
 		"files": [
 			"**/*",
 			"!**/node_modules/**",
+			"!.env",
+			"!.env.*",
+			"!**/.env",
+			"!**/.env.*",
 			"!dist/electron/**",
 			"!resources/assets/**",
 			"!.agents/**",

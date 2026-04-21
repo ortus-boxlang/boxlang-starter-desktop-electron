@@ -10,11 +10,12 @@ class {
      * Initialize the Vite helper
      */
     function init() {
-        variables.isDevelopment = ( getSystemSetting( "ENVIRONMENT", "development" ) == "development" );
+        variables.environment = lCase( trim( getSystemSetting( "ENVIRONMENT", "production" ) ) );
+        variables.isDevelopment = ( variables.environment == "development" );
         variables.viteHost = getSystemSetting( "VITE_HOST", "127.0.0.1:3000" );
         variables.viteProtocol = getSystemSetting( "VITE_PROTOCOL", "http" );
         variables.manifestPath = expandPath( "./includes/resources/.vite/manifest.json" );
-        variables.distPath = "/includes/resources/";
+        variables.distPath = "/includes/resources";
 
         // Load manifest in production
         if ( !variables.isDevelopment && fileExists( variables.manifestPath ) ) {

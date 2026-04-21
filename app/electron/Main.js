@@ -79,8 +79,8 @@ const globalSettings = {
     serverOrigin: `http://localhost:${APP_SERVER_PORT}`,
 	// Window Defaults
     appName: "BoxLang Starter Desktop",
-    windowHeight: 800,
-    windowWidth: 1200,
+    windowHeight: 1024,
+    windowWidth: 1280,
     // Project paths
     projectRoot,
     path,
@@ -373,9 +373,9 @@ function createWindow () {
 
 	// Show window when ready (for production)
 	mainWindow.once( 'ready-to-show', () => {
-		if ( !isDevelopment ) {
+		//if ( !isDevelopment ) {
 			mainWindow.show();
-		}
+		//}
 	} );
 
     mainWindow.on( 'closed', () => {

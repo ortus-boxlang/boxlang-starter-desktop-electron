@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /**
  * [BoxLang]
  *
@@ -15,15 +16,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { app, BrowserWindow, nativeImage, Menu, shell, dialog, Tray, globalShortcut } from "electron";
+import { app, BrowserWindow, nativeImage, dialog } from "electron";
 import { fileURLToPath } from 'url';
 
 // Import our modular components
-import { TrayMenu } from './TrayMenu.js';
 import { AppMenu } from './AppMenu.js';
-import { Shortcuts } from './Shortcuts.js';
 import { BoxLang } from './BoxLang.js';
-import { getServerOrigin, loadServerConfig } from './serverConfig.js';
+import { Shortcuts } from './Shortcuts.js';
+import { TrayMenu } from './TrayMenu.js';
 
 // Dynamic imports
 const path = await import( "path" );
@@ -33,13 +33,12 @@ process.env.PATH = process.env.PATH + ":/usr/local/bin";
 const thisFileName = fileURLToPath( import.meta.url );
 // Get the name of the directory
 const thisDirName = path.dirname( thisFileName );
-// The path to the root of the project
+// The path to the root of the project: two levels up from the current directory
 const projectRoot = path.resolve( thisDirName, "../../" );
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
-const serverConfig = loadServerConfig( { projectRoot, path } );
 
-// Global Instances
+// Global references to components and main window
 let mainWindow;
 let trayMenu;
 let appMenu;
@@ -52,12 +51,33 @@ let boxLang;
  * --------------------------------------------------------
  *  You can change these settings to customize the app as you see fit.
  */
+const APP_DIRECTORY_NAME = "boxlang-starter-desktop"
+const APP_SERVER_PORT = process.env.BOXLANG_PORT ? parseNumber( process.env.BOXLANG_PORT ) : 59700
+const APP_HOME = process.env.BOXLANG_HOME
+	? path.resolve( process.env.BOXLANG_HOME )
+	: path.join( app.getPath( 'home' ), '.' + APP_DIRECTORY_NAME )
+const APP_HOME_SOURCE = process.env.BOXLANG_HOME ? 'env BOXLANG_HOME' : 'default user home'
+
+if( isDevelopment ) {
+	console.log( '[BoxLang] Running in development mode' );
+	console.log( '[BoxLang] App home (' + APP_HOME_SOURCE + '): ' + APP_HOME )
+}
+
 const globalSettings = {
-    serverConfig,
-    serverPort: serverConfig.port,
-    serverDebugMode: serverConfig.debug,
-    serverOrigin: getServerOrigin( serverConfig ),
-    // Window Defaults
+	// This is used to store app data (logs, databases, etc.) in a consistent location across platforms.
+	// Change as you see fit
+	appDirectoryName: APP_DIRECTORY_NAME,
+	// The app home directory (where BoxLang and your app will store its data), can be overridden with BOXLANG_HOME env var
+	// Note: We resolve the path here to ensure it's an absolute path, whether it's provided via env var or defaulted
+	// By default, this uses a hidden folder in the user's home directory
+	appHome: APP_HOME,
+	// The port this app will run under
+	serverPort: APP_SERVER_PORT,
+	// Debug mode can be enabled via BOXLANG_DEBUG env var (true/false/1/0) or defaults to true in development mode
+    serverDebugMode: process.env.BOXLANG_DEBUG ? parseBoolean( process.env.BOXLANG_DEBUG ) : isDevelopment,
+	// The server origin URL (used for API calls, etc.)
+    serverOrigin: `http://localhost:${APP_SERVER_PORT}`,
+	// Window Defaults
     appName: "BoxLang Starter Desktop",
     windowHeight: 800,
     windowWidth: 1200,
@@ -84,8 +104,10 @@ boxLang = new BoxLang( globalSettings );
  * -----------------------------------------------------------
  */
 
+// Ensure single instance application
 const gotLock = app.requestSingleInstanceLock?.() ?? true;
 if ( !gotLock ) {
+	// Another instance is already running, exit this one
 	app.quit();
 }
 let appIsQuitting = false;
@@ -98,46 +120,47 @@ process.on( 'SIGTERM', () => { boxLang.stop(); app.quit(); } );
  * Create the main application window once Electron is ready
  */
 app.whenReady().then( () => {
-  // Ensure app name is set (sometimes needed for development)
-  app.setName( globalSettings.appName );
+	// Ensure app name is set (sometimes needed for development)
+	app.setName( globalSettings.appName );
 
-  // Set about panel options (helps with app name on macOS)
-  if (process.platform === 'darwin') {
-    app.setAboutPanelOptions({
-      applicationName: globalSettings.appName,
-      applicationVersion: "1.0.0",
-      copyright: "© 2025 Ortus Solutions, Corp"
-    });
-  }
+	// Set about panel options (helps with app name on macOS)
+	if ( process.platform === 'darwin' ) {
+	app.setAboutPanelOptions( {
+		applicationName: globalSettings.appName,
+		applicationVersion: "1.0.0",
+		copyright: "© 2025 Ortus Solutions, Corp"
+	} );
+	}
 
-  // Create application menu using modular component
-  appMenu.create( {
-    quit: handleQuit,
-    showOrCreateWindow: showOrCreateWindow,
-    reloadWindow: reloadWindow,
-    forceReloadWindow: forceReloadWindow,
-    restartBoxLang: () => boxLang.restart(),
-    closeWindow: closeWindow,
-    toggleDevTools: toggleDevTools,
-    showAbout: showAboutDialog
-  } );
+	// Create application menu using modular component
+	appMenu.create( {
+		quit: handleQuit,
+		showOrCreateWindow: showOrCreateWindow,
+		reloadWindow: reloadWindow,
+		forceReloadWindow: forceReloadWindow,
+		restartBoxLang: () => boxLang.restart(),
+		closeWindow: closeWindow,
+		toggleDevTools: toggleDevTools,
+		showAbout: showAboutDialog
+	} );
 
-  createWindow();
+	// Create the main application window
+	createWindow();
 
-  // Create system tray using modular component
-  trayMenu.create( {
-    createWindow: createWindow,
-    restartBoxLang: () => boxLang.restart(),
-    quit: handleQuit
-  } );
+	// Create system tray using modular component
+	trayMenu.create( {
+		createWindow: createWindow,
+		restartBoxLang: () => boxLang.restart(),
+		quit: handleQuit
+	} );
 
-  // Register global shortcuts using modular component
-  shortcuts.register( {
-    restartBoxLang: () => boxLang.restart()
-  } );
+	// Register global shortcuts using modular component
+	shortcuts.register( {
+		restartBoxLang: () => boxLang.restart()
+	} );
 
-  // Update component references after everything is created
-  updateComponentReferences();
+	// Update component references after everything is created
+	updateComponentReferences();
 
     boxLang.start();
 } );
@@ -188,7 +211,7 @@ app.on?.( 'second-instance', () => {
 /**
  * Handle application quit
  */
-function handleQuit() {
+function handleQuit () {
     appIsQuitting = true;
     app.quit();
 }
@@ -196,7 +219,7 @@ function handleQuit() {
 /**
  * Show or create window
  */
-function showOrCreateWindow() {
+function showOrCreateWindow () {
     if ( mainWindow ) {
         mainWindow.show();
         mainWindow.focus();
@@ -209,7 +232,7 @@ function showOrCreateWindow() {
 /**
  * Reload window
  */
-function reloadWindow() {
+function reloadWindow () {
     if ( mainWindow ) {
         mainWindow.reload();
     }
@@ -218,7 +241,7 @@ function reloadWindow() {
 /**
  * Force reload window
  */
-function forceReloadWindow() {
+function forceReloadWindow () {
     if ( mainWindow ) {
         mainWindow.webContents.reloadIgnoringCache();
     }
@@ -227,14 +250,14 @@ function forceReloadWindow() {
 /**
  * Close window
  */
-function closeWindow() {
+function closeWindow () {
     mainWindow?.close();
 }
 
 /**
  * Toggle developer tools
  */
-function toggleDevTools() {
+function toggleDevTools () {
     if ( mainWindow ) {
         mainWindow.webContents.toggleDevTools();
     }
@@ -243,7 +266,7 @@ function toggleDevTools() {
 /**
  * Update references in all components
  */
-function updateComponentReferences() {
+function updateComponentReferences () {
     const updateTrayCallback = () => {
         trayMenu.updateMenu( {
             createWindow: createWindow,
@@ -371,6 +394,17 @@ function createWindow () {
 }
 
 /**
+ * This method is used to create a link to a route in the BoxLang server
+ * by returning the full URL to the route based on the server origin and the provided path.
+ *
+ * @param {string} routePath - The path to the route (e.g., "/api/status")
+ * @returns {string} - The full URL to the route (e.g., "http://localhost:59700/api/status")
+ */
+function buildLink ( routePath ) {
+	return `${globalSettings.serverOrigin}${routePath}`;
+}
+
+/**
  *  Resolve the path to an asset
  *
  * @param  {...any} p Path parts to the asset
@@ -379,4 +413,43 @@ function createWindow () {
  */
 function resolveAsset ( ...p ) {
   return globalSettings.path.join( globalSettings.projectRoot, ...p );
+}
+
+/**
+ * Parse a boolean value from various string representations
+ * @param {*} value - The value to parse
+ *
+ * @returns {boolean|undefined} - The parsed boolean, or undefined if it cannot be parsed
+ */
+function parseBoolean ( value ) {
+    if ( value == null ) {
+        return undefined;
+    }
+
+    const normalized = String( value ).trim().toLowerCase();
+
+    if ( [ 'true', '1', 'yes', 'on' ].includes( normalized ) ) {
+        return true;
+    }
+
+    if ( [ 'false', '0', 'no', 'off' ].includes( normalized ) ) {
+        return false;
+    }
+
+    return undefined;
+}
+
+/**
+ * Parse a number from a string, returning undefined if it cannot be parsed
+ * @param {*} value - The value to parse
+ *
+ * @returns {number|undefined} - The parsed number, or undefined if it cannot be parsed
+ */
+function parseNumber ( value ) {
+    if ( value == null || value === '' ) {
+        return undefined;
+    }
+
+    const parsed = Number( value );
+    return Number.isFinite( parsed ) ? parsed : undefined;
 }

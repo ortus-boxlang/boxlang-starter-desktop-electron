@@ -10,8 +10,8 @@
 		"start": "cross-env NODE_ENV=development electron app/electron/Main.js",
 		"prod": "npm run build && electron app/electron/Main.js",
 		"package": "npm run build && electron-builder",
-		"package:miniserver": "boxlang .miniserver/Package.bx",
-		"package:miniserver:force": "boxlang .miniserver/Package.bx --force",
+		"package:miniserver": "boxlang runtime/Package.bx",
+		"package:miniserver:force": "boxlang runtime/Package.bx --force",
 		"package:full": "npm run package:miniserver && npm run package",
 		"preview": "vite preview",
 		"lint": "eslint --ext .js,.ts .",
@@ -20,7 +20,6 @@
 	},
 	"keywords": [],
 	"author": "YOU",
-	"license": "Apache-2.0",
 	"dependencies": {
 		"alpinejs": "^3.14.0"
 	},
@@ -40,7 +39,7 @@
 		"appId": "io.boxlang.starter",
 		"asar": true,
 		"asarUnpack": [
-			".miniserver/**"
+			"runtime/**"
 		],
 		"directories": {
 			"output": "dist/electron"
@@ -50,9 +49,12 @@
 			"!**/node_modules/**",
 			"!dist/electron/**",
 			"!resources/assets/**",
-			"!.miniserver/home/**",
-			"!.boxlang/classes/**",
-			"!.boxlang/logs/**"
+			"!.agents/**",
+			"!.boxlang/**",
+			"!.claude/**",
+			"!.github/**",
+			"!.vscode/**",
+			"tests/**"
 		],
 		"mac": {
 			"icon": "public/includes/icon.icns",

@@ -18,14 +18,22 @@
 import { spawn } from "child_process";
 import { dialog, Notification, app } from "electron";
 import { existsSync } from "fs";
-import { writeRuntimeServerConfig } from './serverConfig.js';
+const path = await import( "path" );
 
+// Centralized configuration for timeouts and intervals
 const STARTUP_TIMEOUT_MS = 30000;
 const READINESS_RETRY_INTERVAL_MS = 500;
 const RESTART_DELAY_MS = 5000;
 const MANUAL_RESTART_DELAY_MS = 1000;
 
-function delay( timeout ) {
+/**
+ * Utility function to create a delay
+ *
+ * @param {*} timeout - Time in milliseconds to delay
+ *
+ * @returns {Promise} Promise that resolves after the specified timeout
+ */
+function delay ( timeout ) {
     return new Promise( ( resolve ) => {
         setTimeout( resolve, timeout );
     } );
@@ -36,7 +44,7 @@ function delay( timeout ) {
  * Handles starting, stopping, and monitoring the BoxLang miniserver process
  */
 export class BoxLang {
-    constructor( globalSettings ) {
+    constructor ( globalSettings ) {
         this.globalSettings = globalSettings;
         this.process = null;
         this.isQuitting = false;
@@ -55,13 +63,13 @@ export class BoxLang {
         this.miniserverCommand = this.detectMiniServerCommand();
     }
 
-
     /**
      * Send a desktop notification
+	 *
      * @param {string} title
      * @param {string} body
      */
-    notify( title, body ) {
+    notify ( title, body ) {
         if ( Notification.isSupported() ) {
             new Notification( { title, body } ).show();
         }
@@ -69,9 +77,10 @@ export class BoxLang {
 
     /**
      * Set the macOS dock badge text. Pass empty string to clear it.
+	 *
      * @param {string} text
      */
-    setDockBadge( text ) {
+    setDockBadge ( text ) {
         if ( process.platform === 'darwin' && app?.dock ) {
             app.dock.setBadge( text );
         }
@@ -79,9 +88,10 @@ export class BoxLang {
 
     /**
      * Set taskbar progress bar. Pass -1 to remove, 2 for indeterminate (pulsing).
+	 *
      * @param {number} value
      */
-    setProgressBar( value ) {
+    setProgressBar ( value ) {
         if ( this.mainWindow && !this.mainWindow.isDestroyed() ) {
             this.mainWindow.setProgressBar( value );
         }
@@ -89,9 +99,10 @@ export class BoxLang {
 
     /**
      * Draw user attention: flash taskbar (Windows/Linux) or bounce dock (macOS).
+	 *
      * @param {'critical'|'informational'} type  macOS bounce type (ignored on other platforms)
      */
-    requestAttention( type = 'critical' ) {
+    requestAttention ( type = 'critical' ) {
         if ( process.platform === 'darwin' && app?.dock ) {
             app.dock.bounce( type );
         } else if ( this.mainWindow && !this.mainWindow.isDestroyed() ) {
@@ -104,29 +115,45 @@ export class BoxLang {
 	 *
      * @param {Object} refs - Object containing mainWindow and other references
      */
-    setReferences( refs ) {
+    setReferences ( refs ) {
         this.mainWindow = refs.mainWindow;
         this.updateCallback = refs.updateCallback;
     }
 
-    updateStatus() {
+	/**
+	 * Call the update callback to notify about status changes
+	 */
+    updateStatus () {
         if ( this.updateCallback ) {
             this.updateCallback();
         }
     }
 
-    getServerUrl() {
+	/**
+	 * Get the server URL based on global settings
+	 *
+	 * @returns {string} Server URL
+	 */
+    getServerUrl () {
         return `${this.globalSettings.serverOrigin}/`;
     }
 
-    clearRestartTimer() {
+	/**
+	 * Clear any pending restart timers
+	 */
+    clearRestartTimer () {
         if ( this.restartTimer ) {
             clearTimeout( this.restartTimer );
             this.restartTimer = null;
         }
     }
 
-    getSafeWindow() {
+	/**
+	 * Safely get the main window reference
+	 *
+	 * @returns {BrowserWindow|null} The main window or null if it's not available
+	 */
+    getSafeWindow () {
         if ( this.mainWindow && !this.mainWindow.isDestroyed() ) {
             return this.mainWindow;
         }
@@ -134,7 +161,13 @@ export class BoxLang {
         return null;
     }
 
-    logRendererError( message ) {
+	/**
+	 * Log an error message to the renderer console
+	 *
+	 * @param {string} message - The error message to log
+	 */
+
+    logRendererError ( message ) {
         const mainWindow = this.getSafeWindow();
 
         if ( !mainWindow ) {
@@ -151,21 +184,23 @@ export class BoxLang {
 
     /**
      * Set quitting state
+	 *
      * @param {boolean} quitting - Whether the app is quitting
      */
-    setQuitting( quitting ) {
+    setQuitting ( quitting ) {
         this.isQuitting = quitting;
     }
 
     /**
      * Detect which miniserver command to use
+	 *
      * @returns {Object} Command info with path and type
      */
-    detectMiniServerCommand() {
+    detectMiniServerCommand () {
         const { projectRoot, path } = this.globalSettings;
 
         // Check for packaged miniserver first
-        const packagedBinPath = path.join( projectRoot, '.miniserver', 'bin' );
+        const packagedBinPath = path.join( projectRoot, 'runtime', 'bin' );
         const packagedCommand = process.platform === 'win32'
             ? path.join( packagedBinPath, 'boxlang-miniserver.bat' )
             : path.join( packagedBinPath, 'boxlang-miniserver' );
@@ -181,7 +216,7 @@ export class BoxLang {
 
         // Fallback to global installation
         console.log( `⚠️  No packaged miniserver found, using global 'boxlang-miniserver' command` );
-        console.log( `   To package miniserver, run: boxlang .miniserver/Package.bx` );
+        console.log( `⚠️  To package miniserver, run: boxlang runtime/Package.bx` );
         return {
             command: 'boxlang-miniserver',
             type: 'global',
@@ -191,24 +226,26 @@ export class BoxLang {
 
     /**
      * Get the current process
+	 *
      * @returns {ChildProcess|null} The BoxLang process
      */
-    getProcess() {
+    getProcess () {
         return this.process;
     }
 
     /**
      * Check if the server is running
+	 *
      * @returns {boolean} True if running
      */
-    isRunning() {
+    isRunning () {
         return [ 'starting', 'running' ].includes( this.state ) && this.process && !this.process.killed;
     }
 
     /**
      * Start the BoxLang miniserver
      */
-    start() {
+    start () {
         if ( this.state === 'starting' || this.state === 'running' ) {
             console.log( `BoxLang server is already ${this.state}` );
             return this.startPromise;
@@ -229,30 +266,21 @@ export class BoxLang {
         this.setProgressBar( 2 );
         this.setDockBadge( '…' );
 
-        const { projectRoot, serverConfig, serverDebugMode, path } = this.globalSettings;
-
-        // Path to the miniserver config file — the server reads all settings from it
-        const miniserverConfigPath = writeRuntimeServerConfig( {
-            projectRoot,
-            path,
-            serverConfig
-        } );
-
         // Prepare spawn options
         const spawnOptions = {
-            cwd: projectRoot,
+            cwd: this.globalSettings.projectRoot,
             detached: false,
             shell: false,
             windowsHide: true,
             env: {
                 ...process.env,
-                BOXLANG_HOME: process.env.BOXLANG_HOME || serverConfig.serverHomePath
+                BOXLANG_HOME: this.globalSettings.appHome
             }
         };
 
         // For packaged miniserver, we need to set up the environment
         if ( this.miniserverCommand.type === 'packaged' ) {
-            const libPath = path.join( projectRoot, '.miniserver', 'lib' );
+            const libPath = path.join( this.globalSettings.projectRoot, 'runtime', 'lib' );
 
             // Add lib directory to classpath/library path
             if ( process.platform === 'win32' ) {
@@ -273,8 +301,8 @@ export class BoxLang {
             // Only --debug is passed as a CLI override when running in development mode,
             // since miniserver.json ships with debug:false.
             [
-                miniserverConfigPath,
-                serverDebugMode ? "--debug" : ""
+                "miniserver.json",
+                this.globalSettings.serverDebugMode ? "--debug" : ""
             ].filter( Boolean ),
             // Spawn Options
             spawnOptions
@@ -339,12 +367,12 @@ export class BoxLang {
                 errorMessage += `Using global BoxLang MiniServer command: ${this.miniserverCommand.command}\n\n`;
                 errorMessage += `Solutions:\n`;
                 errorMessage += `1. Install BoxLang globally or ensure it's in your PATH\n`;
-                errorMessage += `2. Package miniserver locally by running: boxlang .miniserver/Package.bx\n`;
+                errorMessage += `2. Package miniserver locally by running: boxlang runtime/Package.bx\n`;
                 errorMessage += `3. Or download manually and run the packager`;
             } else {
                 errorMessage += `Using packaged BoxLang MiniServer: ${this.miniserverCommand.command}\n\n`;
                 errorMessage += `The packaged miniserver may be corrupted. Try:\n`;
-                errorMessage += `1. Re-run: boxlang .miniserver/Package.bx --force\n`;
+                errorMessage += `1. Re-run: boxlang runtime/Package.bx --force\n`;
                 errorMessage += `2. Check file permissions on the executable`;
             }
 
@@ -363,7 +391,7 @@ export class BoxLang {
      * Stop the BoxLang miniserver
      * @param {string} signal - The signal to send (default: SIGTERM)
      */
-    stop( signal = 'SIGTERM' ) {
+    stop ( signal = 'SIGTERM' ) {
         this.clearRestartTimer();
 
         if ( this.process && !this.process.killed ) {
@@ -387,7 +415,7 @@ export class BoxLang {
     /**
      * Restart the BoxLang server
      */
-    restart() {
+    restart () {
         console.log( "Restarting BoxLang server..." );
         this.notify( 'BoxLang Server', 'Restarting server…' );
         this.restartRequested = true;
@@ -404,7 +432,7 @@ export class BoxLang {
      * Wait until the server is reachable over HTTP before loading the app.
      * @param {number} startSequence - The current startup sequence number
      */
-    async waitForServerReady( startSequence ) {
+    async waitForServerReady ( startSequence ) {
         const serverUrl = this.getServerUrl();
         const deadline = Date.now() + STARTUP_TIMEOUT_MS;
 
@@ -443,7 +471,7 @@ export class BoxLang {
         );
     }
 
-    handleServerReady() {
+    handleServerReady () {
         const serverPort = this.globalSettings.serverPort;
         const mainWindow = this.getSafeWindow();
 
@@ -473,7 +501,7 @@ export class BoxLang {
      * Get server status text
      * @returns {string} Status text
      */
-    getStatus() {
+    getStatus () {
         if ( this.state === 'starting' ) {
             return 'Starting';
         }
@@ -489,7 +517,7 @@ export class BoxLang {
      * Get miniserver information
      * @returns {Object} Miniserver info
      */
-    getMiniServerInfo() {
+    getMiniServerInfo () {
         return {
             command: this.miniserverCommand.command,
             type: this.miniserverCommand.type,
@@ -502,11 +530,11 @@ export class BoxLang {
      * Check if packaged miniserver is available
      * @returns {boolean} True if packaged miniserver exists
      */
-    hasPackagedMiniServer() {
+    hasPackagedMiniServer () {
         const { projectRoot, path } = this.globalSettings;
         const packagedCommand = process.platform === 'win32'
-            ? path.join( projectRoot, '.miniserver', 'bin', 'boxlang-miniserver.bat' )
-            : path.join( projectRoot, '.miniserver', 'bin', 'boxlang-miniserver' );
+            ? path.join( projectRoot, 'runtime', 'bin', 'boxlang-miniserver.bat' )
+            : path.join( projectRoot, 'runtime', 'bin', 'boxlang-miniserver' );
         return existsSync( packagedCommand );
     }
 }

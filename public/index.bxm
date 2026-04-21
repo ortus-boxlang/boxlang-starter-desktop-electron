@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BoxLang Desktop Application</title>
+    <!-- Vite CSS Assets -->
+    <bx:output>#application.viteHelper.styles( "styles" )#</bx:output>
+
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h1>Build Desktop Apps with BoxLang</h1>
+            </div>
+            <div class="card-body">
+                <p>This starter combines a BoxLang runtime, an Electron shell, and a Vite-powered frontend workflow.</p>
+                <ul>
+                    <li><strong>BoxLang</strong> handles templates, routing, and server-side logic.</li>
+                    <li><strong>Electron</strong> provides the desktop window, menu, tray, and native integration.</li>
+                    <li><strong>Vite</strong> builds frontend assets and powers the development loop.</li>
+                </ul>
+
+                <div class="mt-4">
+                    <button class="btn" onclick="showAlert()">Test JavaScript</button>
+                </div>
+
+                <div class="mt-4" x-data="{ message: 'Alpine.js is working!' }">
+                    <h4>Alpine.js Test</h4>
+                    <p x-text="message"></p>
+                    <button class="btn" @click="message = 'Alpine.js clicked!'">Test Alpine.js</button>
+                </div>
+
+                <div class="mt-4">
+                    <h3>Environment Info</h3>
+                    <p><strong>Development Mode:</strong> <bx:output>#application.viteHelper.isDev() ? 'Yes' : 'No'#</bx:output></p>
+                    <p><strong>Current Time:</strong> <bx:output>#now()#</bx:output></p>
+                    <bx:if condition="#application.viteHelper.isDev()#">
+                        <p><strong>Vite Dev Server:</strong> <bx:output>#application.viteHelper.devServerUrl()#</bx:output></p>
+                    </bx:if>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Quick Start</h2>
+            </div>
+            <div class="card-body">
+                <h4>Development Workflow</h4>
+                <ol>
+                    <li>Run <code>npm install</code> once to install the project dependencies.</li>
+                    <li>Run <code>npm run dev</code> to start Vite and Electron together.</li>
+                    <li>Run <code>npm run start</code> only if Vite is already running.</li>
+                </ol>
+
+                <h4>First Feature Path</h4>
+                <ol>
+                    <li>Edit <code>public/index.bxm</code> or files under <code>public/views/</code> for BoxLang-rendered UI.</li>
+                    <li>Edit <code>resources/assets/js/</code> and <code>resources/assets/scss/</code> for frontend behavior and styles.</li>
+                    <li>Edit files under <code>app/electron/</code> for desktop-specific behavior such as menus, tray, and native shell features.</li>
+                </ol>
+
+                <h4>Packaging</h4>
+                <ul>
+                    <li>Run <code>npm run package:miniserver</code> to bundle the MiniServer version defined by <code>.bvmrc</code>.</li>
+                    <li>Run <code>npm run package</code> to create a desktop build.</li>
+                    <li>Run <code>npm run package:full</code> to do both in one command.</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h2>Runtime Notes</h2>
+            </div>
+            <div class="card-body">
+                <ul>
+                    <li><code>miniserver.json</code> is the source of truth for server settings.</li>
+                    <li>Electron generates a plain runtime config before spawn, so comments in <code>miniserver.json</code> stay safe for developers.</li>
+                    <li><code>.bvmrc</code> controls which MiniServer version is packaged for distribution.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vite JavaScript Assets -->
+    <bx:output>#application.viteHelper.scripts( "app" )#</bx:output>
+
+    <script>
+        // Example JavaScript functions
+        function showAlert() {
+            alert('Hello from BoxLang + Electron + Vite!');
+        }
+    </script>
+</body>
+</html>

@@ -18,9 +18,12 @@
 	"contributors": [],
 	"ignore": [],
 	"devDependencies": {
-		"testbox": "*"
+		"testbox": "*",
+		"testbox-cli": "*"
 	},
-	"installPaths": {},
+	"installPaths": {
+		"testbox": "lib/testbox"
+	},
 	"dependencies": {},
 	"scripts": {
 		"postInstall": "pathExists .env || cp .env.example .env && package set ignore=[]"

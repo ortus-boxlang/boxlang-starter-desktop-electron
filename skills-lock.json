@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "skills": {
+    "application-descriptor": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "08a0ee8307d2fa5e36cd620ee6ce84d0e38e6e488c3ca7636485bc5da9c2745d"
+    },
+    "boxlang-async-programming": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "51b310a5f862faf03ff930b8854566ce697ef5706014ea0b8d41fd678f9aa6d5"
+    },
+    "boxlang-best-practices": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "7d08e011c8a3471755f4516c708ea3af3c53c855d7b53f91f9444e8930c4816e"
+    },
+    "boxlang-caching": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "0bb09e51a5b769980b4fec3097fccc12a4fc33e8a1e3740af4e40cd49c9f7458"
+    },
+    "boxlang-cfml-migration": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "a284466dc5cc392747b8e46a206ee162acc14bfe3e3c3b25200cecc07d1129ea"
+    },
+    "boxlang-classes-and-oop": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "17477293bf20faebb024944240c91a838c169d1a705ab0f4ccfa9c04fd9897c0"
+    },
+    "boxlang-cli-scripting": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "57ae3d91496d6a425183fb635780a900f094f231e80f0d8708742b786cdae114"
+    },
+    "boxlang-code-documenter": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "ac06957c446282e603c5ba566c893618983a3dfea7f49df6986d5048824aef17"
+    },
+    "boxlang-code-reviewer": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "75b1a6891e8e4c5f73f5251956f6ef7bfaf497289cf13cdbad277e7a5bf8d55d"
+    },
+    "boxlang-commandbox": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "7de11c45b05102cd74c501c7ab2061a4dcfb64eae4223e400df2499b9467bbe0"
+    },
+    "boxlang-compiled-native-binaries": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "b0e2d31d5fbcb90da7a94781ed943f6ddb2bee2fda46999549cc47dfc6d6185a"
+    },
+    "boxlang-configuration": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "62ea714d8d806324b56ed0d656e9f21663e756ede9e52e53c120962f924e4eb5"
+    },
+    "boxlang-database-access": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "44e26ffcf4dcd633eedd4d08aaa1dc0d1ad5aac700d6798b324e7b3e1c8688f0"
+    },
+    "boxlang-deployment": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "30d6f5d9d9c0513ba42d245978ef4a38eb7357013963be1a1a9eff5359836569"
+    },
+    "boxlang-docbox": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "f8c0513e13e6014f411a41732b8cf6565fad1315ca8293be8d397708ab7638ed"
+    },
+    "boxlang-file-handling": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "cf1ae9ad409d475e17ff588cfab31f444890589b06b70686a0676ca2f4d1131c"
+    },
+    "boxlang-file-watchers": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "db6db2a78806f93e6a58d24895ea9373a0dbbe29809479dd9dc50209cf9f9819"
+    },
+    "boxlang-functional-programming": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "cf9ac7e8f06034ca46d13c06b7c76ee4d49a7c898ca52646ad4a05bb946d3007"
+    },
+    "boxlang-github-actions": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "ad9903369dc24888020ba8fe6bf6af3a586ee372ed5a5303b6e2cfb61b950b0f"
+    },
+    "boxlang-interceptors": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "959ba81f0a4129e5a4839ebb84bc324ff70a08d81aed2e4d51044d9d170c7d8d"
+    },
+    "boxlang-java-integration": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "f0e6a9dd347c4cbca99aae570fd2ddaa46751d0175767f3cc08d57b66a8ba10b"
+    },
+    "boxlang-jsr-223": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "d87a6584dd3e9cb6b3016cf9d14a82bcc9a81cec604abba07e06cbd74812a901"
+    },
+    "boxlang-language-fundamentals": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "1791856caa11bad9436ea0229eaa45f1505a6d26f030f5c244dfbcd2dd7fe4da"
+    },
+    "boxlang-miniserver": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "3303d5b76b9cb1bcec159a3ce7aaa9fb58ec77e72a3faed0230355345ca2dcad"
+    },
+    "boxlang-modules-and-packages": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "5bb1b501a9cda7cef5da616dbcc323492dbba5fcfdd6969f577f91fb379b7752"
+    },
+    "boxlang-scheduled-tasks": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "534448e61aacce705de4065549cfccd9cf8bb1c552330fddd3b40b200960ab58"
+    },
+    "boxlang-security": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "bcf72fd5f5d27c40efef3e6f4ee33017497f0b6bc54e35ae59b3a485b824af0f"
+    },
+    "boxlang-templating": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "92712aa9582312ebd5ed430d8966aa45a47996cb3ec9679cfb401a88085eae63"
+    },
+    "boxlang-testing": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "5062447bfb00f97d62536e8f83e78f5e0e05ea9b01f1ab542b9d29c6a4a7224c"
+    },
+    "boxlang-web-development": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "a70cf19df0f93f733d60c603fdb340b077326e3d39bf0441825b904e947ea27b"
+    },
+    "boxlang-zip": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "361c04fb044b1adabc3dcd1a984df1d4042a7af0b404522b3268df3563baa403"
+    },
+    "runtime-aws-lambda": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "04fae9bc380f539fbd8e315379dfeeb931ffebdc17ab73e6a60b97f41cd18d05"
+    },
+    "runtime-chromebook": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "ec4614f3d25dea96748934b612d8a893b61ce26b6e6fb9b0b95be8ae42735daf"
+    },
+    "runtime-cli-scripting": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "9794bf1f9b2397a35a35827667ab79d9e39252169152ba770bc272bbe0a8eeab"
+    },
+    "runtime-commandbox": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "42fb2b8720d6601e42c36d623f7325f68de7a47a2230a20c50ce596b2b08a3a1"
+    },
+    "runtime-compiled-native-binaries": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "ca028fff05a3b5fe7bbd7e0627c45a6c99aac0e1a4e486c96e8144e362b10caa"
+    },
+    "runtime-digitalocean-app": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "0a6bc0aa85ce8757f8b82309945f1809d804140457da2d04ad89b1bb5c5ae734"
+    },
+    "runtime-docker": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "e8005d96585d7bdb0cd19eb1af6b412ec8869dde6aa716f8f21f7337593f7cd1"
+    },
+    "runtime-esp32": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "d66ed11277795a306aaed56fbb017e0d1b47c4b91fa6a6c24938b97110b6b18a"
+    },
+    "runtime-github-actions": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "258488cf8c79436836701214595626a48631c5728ed07cbb91a0bf93fd91cc1e"
+    },
+    "runtime-google-cloud-functions": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "36768b1f2c780caf5edc4ec899bddaa6983c21e927a1e0ba2e4dcab8657d6fda"
+    },
+    "runtime-jsr-223": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "574c42051cc01c2341c7467bec881e3ea8f94a484a804e26e98e2e3a31d9df85"
+    },
+    "runtime-matchbox": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "c7357e4896d3fbe6fad22508818950c1283379b270298b3c83ee90beb3ec0a1f"
+    },
+    "runtime-miniserver": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "1012c52851b043f624a8f541991a3e930a474a435be3adfa16251538f5baa336"
+    },
+    "runtime-spring-boot": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "922b409dac431d6d11b1b6871b5720adb2834dc4eccc007ce613190f0edbf8e4"
+    },
+    "runtime-wasm-container": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "c2f3c4f530eb5fd42bf8d1b89d20e29791d6f8f8080fa925a69b0dccbed25d05"
+    },
+    "runtime-wasm-in-the-browser": {
+      "source": "ortus-boxlang/skills",
+      "sourceType": "github",
+      "computedHash": "eefca606a67affa5ecbb240a92123582ec41f57c69075edcf81d1576ff1ba09a"
+    }
+  }
+}

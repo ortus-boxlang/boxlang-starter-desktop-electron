@@ -18,6 +18,18 @@
 import { spawn } from "child_process";
 import { dialog, Notification, app } from "electron";
 import { existsSync } from "fs";
+import { writeRuntimeServerConfig } from './serverConfig.js';
+
+const STARTUP_TIMEOUT_MS = 30000;
+const READINESS_RETRY_INTERVAL_MS = 500;
+const RESTART_DELAY_MS = 5000;
+const MANUAL_RESTART_DELAY_MS = 1000;
+
+function delay( timeout ) {
+    return new Promise( ( resolve ) => {
+        setTimeout( resolve, timeout );
+    } );
+}
 
 /**
  * BoxLang Server Management Module
@@ -28,6 +40,12 @@ export class BoxLang {
         this.globalSettings = globalSettings;
         this.process = null;
         this.isQuitting = false;
+        this.state = 'stopped';
+        this.restartTimer = null;
+        this.startSequence = 0;
+        this.startPromise = null;
+        this.restartRequested = false;
+        this.blockAutoRestart = false;
 
         // References that will be set later
         this.mainWindow = null;
@@ -91,6 +109,46 @@ export class BoxLang {
         this.updateCallback = refs.updateCallback;
     }
 
+    updateStatus() {
+        if ( this.updateCallback ) {
+            this.updateCallback();
+        }
+    }
+
+    getServerUrl() {
+        return `${this.globalSettings.serverOrigin}/`;
+    }
+
+    clearRestartTimer() {
+        if ( this.restartTimer ) {
+            clearTimeout( this.restartTimer );
+            this.restartTimer = null;
+        }
+    }
+
+    getSafeWindow() {
+        if ( this.mainWindow && !this.mainWindow.isDestroyed() ) {
+            return this.mainWindow;
+        }
+
+        return null;
+    }
+
+    logRendererError( message ) {
+        const mainWindow = this.getSafeWindow();
+
+        if ( !mainWindow ) {
+            return;
+        }
+
+        const serializedMessage = JSON.stringify( String( message ) );
+        mainWindow.webContents
+            .executeJavaScript( `console.error(${serializedMessage});`, true )
+            .catch( ( error ) => {
+                console.warn( 'Could not write BoxLang error to renderer console:', error.message );
+            } );
+    }
+
     /**
      * Set quitting state
      * @param {boolean} quitting - Whether the app is quitting
@@ -144,30 +202,41 @@ export class BoxLang {
      * @returns {boolean} True if running
      */
     isRunning() {
-        return this.process && !this.process.killed;
+        return [ 'starting', 'running' ].includes( this.state ) && this.process && !this.process.killed;
     }
 
     /**
      * Start the BoxLang miniserver
      */
     start() {
+        if ( this.state === 'starting' || this.state === 'running' ) {
+            console.log( `BoxLang server is already ${this.state}` );
+            return this.startPromise;
+        }
+
         console.log( "Starting BoxLang mini server..." );
         console.log( `Using ${this.miniserverCommand.type} miniserver: ${this.miniserverCommand.command}` );
 
-        // Check if server is already running
-        if ( this.isRunning() ) {
-            console.log( "BoxLang server is already running" );
-            return;
-        }
+        this.clearRestartTimer();
+        this.blockAutoRestart = false;
+        this.restartRequested = false;
+        this.state = 'starting';
+        this.startSequence += 1;
+        const startSequence = this.startSequence;
+        this.updateStatus();
 
         // Show indeterminate progress bar while server is starting
         this.setProgressBar( 2 );
         this.setDockBadge( '…' );
 
-        const { projectRoot, serverDebugMode, path } = this.globalSettings;
+        const { projectRoot, serverConfig, serverDebugMode, path } = this.globalSettings;
 
         // Path to the miniserver config file — the server reads all settings from it
-        const miniserverConfigPath = path.join( projectRoot, 'miniserver.json' );
+        const miniserverConfigPath = writeRuntimeServerConfig( {
+            projectRoot,
+            path,
+            serverConfig
+        } );
 
         // Prepare spawn options
         const spawnOptions = {
@@ -175,7 +244,10 @@ export class BoxLang {
             detached: false,
             shell: false,
             windowsHide: true,
-            env: { ...process.env, BOXLANG_HOME: path.join( projectRoot, '.miniserver', 'home' ) }
+            env: {
+                ...process.env,
+                BOXLANG_HOME: process.env.BOXLANG_HOME || serverConfig.serverHomePath
+            }
         };
 
         // For packaged miniserver, we need to set up the environment
@@ -211,46 +283,55 @@ export class BoxLang {
         // Handle stderr
         this.process.stderr.on( "data", ( data ) => {
             console.error( `BoxLang Error: ${data}` );
-            // Show error notification
-            if ( this.mainWindow && !this.mainWindow.isDestroyed() ) {
-                this.mainWindow.webContents.executeJavaScript(
-                    `console.error('BoxLang Server Error: ${data.toString().replace( /'/g, "\\'" )}')`
-                );
-            }
+            this.logRendererError( `BoxLang Server Error: ${data.toString()}` );
+        } );
+
+        this.process.stdout.on( 'data', ( data ) => {
+            console.log( `BoxLang: ${data.toString().trim()}` );
         } );
 
         // Handle process close
         this.process.on( "close", ( code ) => {
             console.log( `BoxLang process exited with code ${code}` );
+            const wasRestartRequested = this.restartRequested;
+
+            this.process = null;
+            this.startPromise = null;
+            this.state = this.isQuitting ? 'stopped' : 'stopped';
 
             // Clear progress bar and dock badge on exit
             this.setProgressBar( -1 );
             this.setDockBadge( '' );
 
             // Notify about status change
-            if ( this.updateCallback ) {
-                this.updateCallback();
-            }
+            this.updateStatus();
 
             // Auto-restart on unexpected exit (not during app shutdown)
-            if ( !this.isQuitting && code !== 0 ) {
+            if ( !this.isQuitting && !wasRestartRequested && !this.blockAutoRestart && code !== 0 ) {
                 console.log( "BoxLang server crashed, attempting restart in 5 seconds..." );
                 this.notify(
                     'BoxLang Server Crashed',
                     `Server stopped unexpectedly (code ${code}). Restarting in 5 seconds…`
                 );
                 this.requestAttention( 'critical' );
-                setTimeout( () => {
+                this.restartTimer = setTimeout( () => {
                     if ( !this.isQuitting ) {
                         this.start();
                     }
-                }, 5000 );
+                }, RESTART_DELAY_MS );
             }
         } );
 
         // Handle process error
         this.process.on( "error", ( error ) => {
             console.error( "Failed to start BoxLang server:", error );
+            this.blockAutoRestart = true;
+            this.state = 'stopped';
+            this.startPromise = null;
+            this.process = null;
+            this.setProgressBar( -1 );
+            this.setDockBadge( '' );
+            this.updateStatus();
 
             let errorMessage = `Failed to start BoxLang server: ${error.message}\n\n`;
 
@@ -274,16 +355,8 @@ export class BoxLang {
             );
         } );
 
-        // Handle stdout for server ready detection (bound once so it can be removed)
-        this._onStdout = ( message ) => this.checkServerReady( message );
-        this.process.stdout.on( 'data', this._onStdout );
-
-        // Update status after a delay
-        setTimeout( () => {
-            if ( this.updateCallback ) {
-                this.updateCallback();
-            }
-        }, 1000 );
+        this.startPromise = this.waitForServerReady( startSequence );
+        return this.startPromise;
     }
 
     /**
@@ -291,12 +364,23 @@ export class BoxLang {
      * @param {string} signal - The signal to send (default: SIGTERM)
      */
     stop( signal = 'SIGTERM' ) {
-        if ( this.isRunning() ) {
+        this.clearRestartTimer();
+
+        if ( this.process && !this.process.killed ) {
+            this.state = 'stopping';
+            this.updateStatus();
             try {
                 this.process.kill( signal );
             } catch {
                 console.warn( "BoxLang process already killed." );
+                this.process = null;
+                this.state = 'stopped';
+                this.updateStatus();
             }
+        } else {
+            this.process = null;
+            this.state = 'stopped';
+            this.updateStatus();
         }
     }
 
@@ -306,61 +390,82 @@ export class BoxLang {
     restart() {
         console.log( "Restarting BoxLang server..." );
         this.notify( 'BoxLang Server', 'Restarting server…' );
+        this.restartRequested = true;
+        this.clearRestartTimer();
         this.stop();
 
-        // Notify about status change
-        if ( this.updateCallback ) {
-            this.updateCallback();
-        }
-
-        setTimeout( () => {
+        this.restartTimer = setTimeout( () => {
+            this.restartRequested = false;
             this.start();
-        }, 2000 );
+        }, MANUAL_RESTART_DELAY_MS );
     }
 
     /**
-     * Check if the server is ready and load the main page
-     * @param {Buffer} message - The message from the server
+     * Wait until the server is reachable over HTTP before loading the app.
+     * @param {number} startSequence - The current startup sequence number
      */
-    checkServerReady( message ) {
-        if ( message.toString().includes( "BoxLang MiniServer started" ) ) {
-            const serverPort = this.globalSettings.serverPort;
-            // Server is up — clear progress indicators and notify
-            this.setProgressBar( -1 );
-            this.setDockBadge( '' );
-            this.notify(
-                'BoxLang Server Started',
-                `Server is running on port ${serverPort}`
-            );
+    async waitForServerReady( startSequence ) {
+        const serverUrl = this.getServerUrl();
+        const deadline = Date.now() + STARTUP_TIMEOUT_MS;
 
-            const loadPage = () => {
-                if ( this.mainWindow ) {
-                    this.mainWindow.loadURL( `http://localhost:${serverPort}/` );
+        while ( Date.now() < deadline ) {
+            if ( this.startSequence !== startSequence || this.isQuitting ) {
+                return;
+            }
+
+            if ( !this.process || this.process.killed ) {
+                return;
+            }
+
+            try {
+                const response = await fetch( serverUrl, {
+                    method: 'GET',
+                    redirect: 'manual',
+                    signal: AbortSignal.timeout( 2000 )
+                } );
+
+                if ( response.ok || [ 301, 302, 304, 401, 403 ].includes( response.status ) ) {
+                    this.handleServerReady();
+                    return;
                 }
-            };
-
-            setTimeout( () => {
-                loadPage();
-            }, 1000 );
-
-            if ( this.mainWindow ) {
-                this.mainWindow.webContents.once( "did-finish-load", () => {
-                    console.log( "Page loaded successfully." );
-                } );
-
-                this.mainWindow.webContents.once( "did-fail-load", () => {
-                    setTimeout( () => {
-                        loadPage();
-                        console.log( "Retrying to load the page..." );
-                    }, 1000 );
-                } );
+            } catch {
+                // The server is still starting.
             }
 
-            // Detach the stdout listener — it's no longer needed after first start
-            if ( this._onStdout ) {
-                this.process.stdout.removeListener( "data", this._onStdout );
-                this._onStdout = null;
-            }
+            await delay( READINESS_RETRY_INTERVAL_MS );
+        }
+
+        this.blockAutoRestart = true;
+        this.stop();
+        dialog.showErrorBox(
+            'Server Startup Timeout',
+            `BoxLang MiniServer did not become reachable within ${STARTUP_TIMEOUT_MS / 1000} seconds.\n\nChecked URL: ${serverUrl}\nConfig: ${this.globalSettings.serverConfig.configPath}\n\nVerify miniserver.json and try restarting the app.`
+        );
+    }
+
+    handleServerReady() {
+        const serverPort = this.globalSettings.serverPort;
+        const mainWindow = this.getSafeWindow();
+
+        if ( this.state === 'running' ) {
+            return;
+        }
+
+        this.state = 'running';
+        this.setProgressBar( -1 );
+        this.setDockBadge( '' );
+        this.startPromise = null;
+        this.updateStatus();
+        this.notify(
+            'BoxLang Server Started',
+            `Server is running on port ${serverPort}`
+        );
+
+        if ( mainWindow ) {
+            mainWindow.loadURL( this.getServerUrl() );
+            mainWindow.webContents.once( 'did-finish-load', () => {
+                console.log( 'Page loaded successfully.' );
+            } );
         }
     }
 
@@ -369,6 +474,14 @@ export class BoxLang {
      * @returns {string} Status text
      */
     getStatus() {
+        if ( this.state === 'starting' ) {
+            return 'Starting';
+        }
+
+        if ( this.state === 'stopping' ) {
+            return 'Stopping';
+        }
+
         return this.isRunning() ? 'Running' : 'Stopped';
     }
 

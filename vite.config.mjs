@@ -11,7 +11,7 @@ export default defineConfig( {
     // Entry points for your assets
     build: {
         // Output directory for built assets (separate from electron-builder)
-        outDir: 'includes/resources/',
+        outDir: 'public/includes/resources/',
 
         // Clear the output directory before each build
         emptyOutDir: true,
@@ -59,6 +59,7 @@ export default defineConfig( {
     server: {
         host: '127.0.0.1',
         port: 3000,
+        strictPort: true,
         // Enable CORS for BoxLang integration
         cors: true,
         // Serve static assets

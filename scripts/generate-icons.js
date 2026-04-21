@@ -1,5 +1,5 @@
 /**
- * Icon generator — produces includes/icon.ico for Windows packaging.
+ * Icon generator — produces public/includes/icon.ico for Windows packaging.
  *
  * Requires: npm install --save-dev png-to-ico
  * Usage:    node scripts/generate-icons.js
@@ -13,12 +13,12 @@ const __dirname = path.dirname( fileURLToPath( import.meta.url ) );
 const root      = path.resolve( __dirname, '..' );
 
 const sources = [
-    'includes/icon.iconset/icon_16x16.png',
-    'includes/icon.iconset/icon_32x32.png',
-    'includes/icon.iconset/icon_256x256.png',
+    'public/includes/icon.iconset/icon_16x16.png',
+    'public/includes/icon.iconset/icon_32x32.png',
+    'public/includes/icon.iconset/icon_256x256.png',
 ].map( ( p ) => path.join( root, p ) );
 
-const dest = path.join( root, 'includes', 'icon.ico' );
+const dest = path.join( root, 'public', 'includes', 'icon.ico' );
 
 pngToIco( sources )
     .then( ( buf ) => {

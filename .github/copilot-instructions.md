@@ -47,7 +47,7 @@ This is a BoxLang Electron desktop application that combines BoxLang runtime wit
 ## Application Architecture
 
 ### Modular Structure
-- **Main Entry**: `.electron/main.js` - Electron main process coordinator
+- **Main Entry**: `app/electron/Main.js` - Electron main process coordinator
 - **TrayMenu.js**: System tray functionality
 - **AppMenu.js**: Application menu management
 - **Shortcuts.js**: Global keyboard shortcuts
@@ -63,7 +63,7 @@ const globalSettings = {
     windowWidth: 1200,
     projectRoot,
     path,
-    loadingView: path.join( projectRoot, "views/loading.html" )
+    loadingView: path.join( projectRoot, "public/views/loading.html" )
 };
 ```
 
@@ -84,7 +84,7 @@ const globalSettings = {
 - `npm run package` - Build and package Electron application
 
 ### Asset Management
-- **Vite Output**: Assets build to `includes/resources/`
+- **Vite Output**: Assets build to `public/includes/resources/`
 - **ViteHelper.bx**: BoxLang integration for serving Vite-built assets
 - **Development**: Assets served from Vite dev server
 - **Production**: Assets served from built files
@@ -98,16 +98,16 @@ const globalSettings = {
 
 ### File Structure
 ```
-.electron/          # Electron main process modules
+app/electron/       # Electron main process modules
 .miniserver/        # BoxLang miniserver packaging
 ├── Package.bx      # Packager script
 ├── bin/           # Downloaded miniserver binaries (gitignored)
 └── lib/           # Downloaded miniserver libraries (gitignored)
-includes/
+public/includes/
 ├── resources/      # Vite build output (gitignored)
 └── helpers/
     └── ViteHelper.bx # Vite integration helper
-views/              # BoxLang views/templates
+public/views/       # BoxLang views/templates
 resources/assets/   # Source assets (JS, CSS, images)
 ```
 

@@ -11,6 +11,7 @@ WEB-INF
 
 # MiniServer runtime home (logs, compiled classes, etc.)
 .miniserver/home/
+.miniserver/runtime/
 
 # Engines + Database + CBFS + Secrets
 .env
@@ -39,7 +40,7 @@ dist/**
 # Vite specific
 .vite/
 out/
-includes/resources/**
+public/includes/resources/**
 
 # MiniServer packaging (exclude downloaded binaries)
 .miniserver/bin/

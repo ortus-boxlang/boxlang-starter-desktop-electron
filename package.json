@@ -3,12 +3,12 @@
 	"version": "1.0.0",
 	"type": "module",
 	"description": "A starter BoxLang application for building desktop applications with Electron",
-	"main": ".electron/Main.js",
+	"main": "app/electron/Main.js",
 	"scripts": {
-		"dev": "concurrently --kill-others \"vite\" \"wait-on tcp:127.0.0.1:3000 && cross-env NODE_ENV=development electron .electron/Main.js\"",
+		"dev": "concurrently --kill-others \"vite\" \"wait-on tcp:127.0.0.1:3000 && cross-env NODE_ENV=development electron app/electron/Main.js\"",
 		"build": "vite build",
-		"start": "cross-env NODE_ENV=development electron .electron/Main.js",
-		"prod": "npm run build && electron .electron/Main.js",
+		"start": "cross-env NODE_ENV=development electron app/electron/Main.js",
+		"prod": "npm run build && electron app/electron/Main.js",
 		"package": "npm run build && electron-builder",
 		"package:miniserver": "boxlang .miniserver/Package.bx",
 		"package:miniserver:force": "boxlang .miniserver/Package.bx --force",
@@ -55,11 +55,11 @@
 			"!.boxlang/logs/**"
 		],
 		"mac": {
-			"icon": "includes/icon.icns",
+			"icon": "public/includes/icon.icns",
 			"target": "dmg"
 		},
 		"win": {
-			"icon": "includes/icon.ico",
+			"icon": "public/includes/icon.ico",
 			"target": "nsis"
 		},
 		"nsis": {
@@ -69,7 +69,7 @@
 			"createStartMenuShortcut": true
 		},
 		"linux": {
-			"icon": "includes/icon.iconset/icon.png",
+			"icon": "public/includes/icon.iconset/icon.png",
 			"target": "AppImage",
 			"category": "Utility"
 		}

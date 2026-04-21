@@ -34,7 +34,7 @@ const thisFileName = fileURLToPath( import.meta.url );
 // Get the name of the directory
 const thisDirName = path.dirname( thisFileName );
 // The path to the root of the project
-const projectRoot = path.resolve( thisDirName, "../" );
+const projectRoot = path.resolve( thisDirName, "../../" );
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
 const serverConfig = loadServerConfig( { projectRoot, path } );

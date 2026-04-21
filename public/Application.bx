@@ -37,10 +37,10 @@ class {
 	this.datasource = "boxlangDB";
 	// SQL Lite Datasource Definition
 	this.datasources[ "boxlangDB" ] = {
-	"driver"  : "sqlite",
-	"protocol": "directory",
-	"database": "./.database/boxlangDB"
-};
+		"driver"  : "sqlite",
+		"protocol": "directory",
+		"database": "./.database/boxlangDB"
+	};
 
 	/**
 	 * Fires when the application starts
@@ -88,6 +88,7 @@ class {
 	 * @template
 	 */
 	public boolean function onMissingTemplate( template ){
+		return false;
 	}
 
 }

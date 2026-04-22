@@ -26,8 +26,44 @@
  * maker-flatpak requires D-Bus and a proper sandbox environment.
  * It is skipped when SKIP_FLATPAK=1 (set automatically in the Docker build image).
  */
+const path = require( "path" );
+const fs   = require( "fs" );
+
 const hasMacSigningIdentity = !!process.env.MAC_SIGNING_IDENTITY;
 const skipFlatpak = process.env.SKIP_FLATPAK === "1";
+
+/**
+ * postMake hook — bundle unsigned-build helper scripts into every ZIP artifact.
+ *
+ * CI builds are not code-signed, so macOS Gatekeeper and Windows SmartScreen
+ * will block the app. The scripts in ./scripts explain the issue and automate
+ * the workaround for each OS. Bundling them in the ZIP means users always
+ * have the fix at hand without hunting for docs.
+ */
+function postMake( forgeConfig, makeResults ) {
+	const scripts = [
+		{ src: "scripts/mac-open.sh",       dest: "mac-open.sh" },
+		{ src: "scripts/win-unblock.ps1",   dest: "win-unblock.ps1" },
+		{ src: "scripts/UNSIGNED-BUILD.md", dest: "UNSIGNED-BUILD.md" }
+	];
+
+	for ( const result of makeResults ) {
+		// Only inject into ZIP artifacts — DMG/EXE/DEB/RPM handle themselves
+		if ( result.artifacts.some( ( a ) => a.endsWith( ".zip" ) ) ) {
+			const zipDir = path.dirname( result.artifacts.find( ( a ) => a.endsWith( ".zip" ) ) );
+			for ( const script of scripts ) {
+				const srcPath  = path.resolve( __dirname, script.src );
+				const destPath = path.join( zipDir, script.dest );
+				if ( fs.existsSync( srcPath ) ) {
+					fs.copyFileSync( srcPath, destPath );
+					console.log( `[postMake] Copied ${ script.dest } → ${ zipDir }` );
+				}
+			}
+		}
+	}
+	return makeResults;
+}
+
 module.exports = {
 	packagerConfig: {
 		name        : "BoxLang Starter Desktop",
@@ -169,6 +205,10 @@ module.exports = {
 			}
 		} ] )
 	],
+
+	hooks : {
+		postMake
+	},
 
 	plugins : [],
 

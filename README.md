@@ -228,6 +228,62 @@ This repository includes AI skills that help coding agents work with BoxLang pat
 
 If you add new project conventions, update the relevant skill or instruction so agents use them consistently.
 
+## Running Downloaded Builds (Unsigned)
+
+CI builds are not code-signed. Each OS has a security mechanism that blocks
+unsigned apps downloaded from the internet. Every ZIP release includes helper
+scripts and a `UNSIGNED-BUILD.md` that explains this in detail.
+
+### macOS — Gatekeeper
+
+macOS will show *"is damaged and can't be opened"* for unsigned apps. The app
+is not damaged — it just lacks an Apple Developer ID signature.
+
+**Option 1 — helper script (in the ZIP):**
+
+```bash
+bash mac-open.sh
+```
+
+**Option 2 — manual:**
+
+```bash
+xattr -cr "/path/to/BoxLang Starter Desktop.app"
+open "/path/to/BoxLang Starter Desktop.app"
+```
+
+**Option 3 — right-click:** Right-click the `.app` → **Open** → **Open**.
+
+### Windows — SmartScreen
+
+Windows will show *"Windows protected your PC"* for unsigned executables.
+
+**Option 1 — helper script (in the ZIP):**
+
+```powershell
+.\win-unblock.ps1
+```
+
+**Option 2 — manual:** Right-click the `.exe` → **Properties**
+→ check **Unblock** → **OK**.
+
+**Option 3 — SmartScreen dialog:** Click **More info** → **Run anyway**.
+
+### Linux
+
+No quarantine mechanism. Install normally:
+
+```bash
+# Debian / Ubuntu
+sudo dpkg -i "boxlang-starter-desktop_*.deb"
+
+# RHEL / Fedora
+sudo rpm -i "boxlang-starter-desktop-*.rpm"
+
+# Flatpak
+flatpak install --user "boxlang-starter-desktop-*.flatpak"
+```
+
 ## Troubleshooting
 
 ### Server fails to start

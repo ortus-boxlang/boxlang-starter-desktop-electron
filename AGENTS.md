@@ -66,7 +66,7 @@ When updating agent behavior or project guidance, keep references and folder nam
 
 This project uses Electron Forge for building distributables (forge.config.cjs).
 
-- MCP docs reference: https://www.electronforge.io/~gitbook/mcp
+- MCP docs reference: <https://www.electronforge.io/~gitbook/mcp>
 - Config file: forge.config.cjs (CommonJS, required for Forge compatibility).
 - asar is always false. BoxLang MiniServer is spawned as a real filesystem executable and cannot be inside an asar archive.
 - Windows installer uses Squirrel (Forge default), not NSIS.

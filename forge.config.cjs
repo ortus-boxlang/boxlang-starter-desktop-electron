@@ -22,8 +22,12 @@
  *
  * maker-pkg requires a valid macOS code signing identity and is only
  * included when MAC_SIGNING_IDENTITY is set (typically in CI).
+ *
+ * maker-flatpak requires D-Bus and a proper sandbox environment.
+ * It is skipped when SKIP_FLATPAK=1 (set automatically in the Docker build image).
  */
 const hasMacSigningIdentity = !!process.env.MAC_SIGNING_IDENTITY;
+const skipFlatpak = process.env.SKIP_FLATPAK === "1";
 module.exports = {
 	packagerConfig: {
 		name        : "BoxLang Starter Desktop",
@@ -150,9 +154,11 @@ module.exports = {
 		// the Flathub remote:
 		//   flatpak remote-add --if-not-exists --user flathub \
 		//     https://dl.flathub.org/repo/flathub.flatpakrepo
-		// Linux hosts only — these tools are not available on macOS/Windows.
+		// Linux hosts only. Skipped in Docker (SKIP_FLATPAK=1) because
+		// flatpak-builder requires D-Bus and a proper sandbox that is
+		// not available in a plain container. Built in CI (ubuntu-latest).
 		// ---------------------------------------------------------------
-		{
+		...( skipFlatpak ? [] : [ {
 			name      : "@electron-forge/maker-flatpak",
 			platforms : [ "linux" ],
 			config    : {
@@ -161,7 +167,7 @@ module.exports = {
 					categories : [ "Utility" ]
 				}
 			}
-		}
+		} ] )
 	],
 
 	plugins : [],

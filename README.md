@@ -181,7 +181,23 @@ npm run package:linux  # Linux
 brew install dpkg fakeroot
 ```
 
-`.rpm` and `.flatpak` require a real Linux host (`rpmbuild` and `flatpak-builder` depend on Linux filesystem paths). Build those via CI (`ubuntu-latest`) or a Linux VM/Docker.
+`.rpm` and `.flatpak` require a real Linux host (`rpmbuild` and `flatpak-builder` depend on Linux filesystem paths). Build those via CI (`ubuntu-latest`), a Linux VM, or Docker (see below).
+
+### Building Linux packages with Docker
+
+A Dockerfile is included for building all Linux packages from macOS (or Windows):
+
+```bash
+# First time: package the MiniServer runtime (one-time, or after .bvmrc changes)
+npm run package:miniserver
+
+# Build Linux packages inside an Ubuntu container
+npm run package:linux:docker
+```
+
+This builds the image from `Dockerfile.linux-build` and runs it with your project bind-mounted. A named Docker volume (`boxlang_linux_node_modules`) is used for Linux-native `node_modules` so they don't conflict with your macOS install. Output lands in `dist/electron/` on your host.
+
+> `flatpak-builder` requires `--privileged` (already included in the script). Remove that flag if you don't need Flatpak.
 
 ## Most Important Scripts
 
@@ -192,6 +208,7 @@ brew install dpkg fakeroot
 - `npm run package:mac`: Build and package for macOS (`.dmg`, `.pkg`, `.zip`)
 - `npm run package:win`: Build and package for Windows (Squirrel `.exe`, `.zip`)
 - `npm run package:linux`: Build and package for Linux (`.deb`, `.rpm`, `.flatpak`, `.zip`)
+- `npm run package:linux:docker`: Build Linux packages inside an Ubuntu Docker container (macOS/Windows cross-build)
 - `npm run package:full`: Package MiniServer first, then build and package the desktop app
 
 ## Where Developers Usually Edit

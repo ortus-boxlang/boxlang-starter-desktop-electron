@@ -87,7 +87,10 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: "25"
+          # Node 22+ removed fs.rmdir({recursive:true}) which cross-zip (used by
+          # @electron-forge/maker-zip) still relies on. Pin to Node 20 LTS until
+          # cross-zip ships a patched release.
+          node-version: "20"
           cache: "npm"
 
       - name: Set up Java 21

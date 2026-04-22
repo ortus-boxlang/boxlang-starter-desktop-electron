@@ -92,6 +92,10 @@ export default defineConfig( {
     css: {
         preprocessorOptions: {
             scss: {
+                // Silence Bootstrap 5's use of deprecated Sass global color functions
+                // (red(), green(), blue()). These are Bootstrap internals — the warnings
+                // will resolve when Bootstrap publishes a Sass-modern-compatible release.
+                silenceDeprecations: [ "color-functions", "global-builtin", "import" ],
                 // Add any SCSS options here
                 additionalData: `
                     // Global SCSS variables and mixins can be imported here

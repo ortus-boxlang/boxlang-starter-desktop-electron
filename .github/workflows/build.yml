@@ -90,10 +90,22 @@ jobs:
           node-version: "25"
           cache: "npm"
 
-      - name: Setup BoxLang
-        uses: ortus-boxlang/setup-boxlang@main
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
         with:
-          with-commandbox: true
+          distribution: temurin
+          java-version: "21"
+
+      # setup-boxlang action does not support Windows — install manually
+      - name: Install BoxLang (Windows)
+        shell: powershell
+        run: |
+          iex ((New-Object System.Net.WebClient).DownloadString('https://install-windows.boxlang.io'))
+          Add-Content -Path $env:GITHUB_PATH -Value "C:\BoxLang\bin"
+
+      - name: Install CommandBox (Windows)
+        shell: powershell
+        run: choco install commandbox -y
 
       - name: Install dependencies
         run: |

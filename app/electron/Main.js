@@ -157,7 +157,7 @@ const globalSettings = {
     projectRoot,
     path,
     // The loading view path
-	loadingView: path.join( projectRoot, "public/views/loading.html" ),
+	loadingView: path.join( projectRoot, "public/includes/loading.html" ),
 	isDevelopment
 };
 

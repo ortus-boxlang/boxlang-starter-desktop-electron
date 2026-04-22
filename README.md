@@ -1,6 +1,6 @@
 # ⚡ BoxLang Desktop Electron Starter App
 
-```
+```bash
 |:------------------------------------------------------:|
 | ⚡︎ B o x L a n g ⚡︎
 | Dynamic : Modular : Productive
@@ -23,9 +23,10 @@
 - BoxLang MiniServer running locally inside the desktop app
 - Electron shell with menu, tray, shortcuts, and native window lifecycle
 - Vite build pipeline for JS and SCSS assets
+- A nice desktop theme with Bootstrap and Alpine.js
 - Simple full packaging flow for macOS, Windows, and Linux
 
-## How it works
+## 🧑‍💻 How it works
 
 ### Architecture diagram
 
@@ -71,6 +72,8 @@ flowchart LR
 },
 "/public": "${user-dir}/public"
 ```
+
+> Please note that the development one includes mappings for tests and TestBox, while the production one is focused on the app and public folders.
 
 ### Config relationship diagram
 
@@ -122,7 +125,7 @@ flowchart TD
   - globalShortcut: <https://www.electronjs.org/docs/latest/api/global-shortcut>
   - Accelerator keys: <https://www.electronjs.org/docs/latest/api/accelerator>
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
 
@@ -135,11 +138,9 @@ flowchart TD
 ### Run in development
 
 ```bash
-# Install BoxLang dependencies
-box install
-# Install Node dependencies
-npm install
-# Start Vite and Electron
+# Install Dependencies
+box install && npm install
+# Start The App
 npm run dev
 ```
 
@@ -199,26 +200,29 @@ This builds the image from `Dockerfile.linux-build` and runs it with your projec
 
 > `flatpak-builder` requires `--privileged` (already included in the script). Remove that flag if you don't need Flatpak.
 
-## Most Important Scripts
+## 🔬 Most Important Scripts
 
-- `npm run dev`: Vite + Electron development mode
-- `npm run build`: Build frontend assets
-- `npm run package:miniserver`: Download MiniServer runtime from `.bvmrc`
-- `npm run package`: Build assets and package the desktop app with Electron Forge (current platform)
-- `npm run package:mac`: Build and package for macOS (`.dmg`, `.pkg`, `.zip`)
-- `npm run package:win`: Build and package for Windows (Squirrel `.exe`, `.zip`)
-- `npm run package:linux`: Build and package for Linux (`.deb`, `.rpm`, `.flatpak`, `.zip`)
-- `npm run package:linux:docker`: Build Linux packages inside an Ubuntu Docker container (macOS/Windows cross-build)
-- `npm run package:full`: Package MiniServer first, then build and package the desktop app
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Vite + Electron development mode |
+| `npm run build` | Build frontend assets |
+| `npm run package:miniserver` | Download MiniServer runtime from `.bvmrc` |
+| `npm run package` | Build assets and package the desktop app with Electron Forge (current platform) |
+| `npm run package:mac` | Build and package for macOS (`.dmg`, `.pkg`, `.zip`) |
+| `npm run package:win` | Build and package for Windows (Squirrel `.exe`, `.zip`) |
+| `npm run package:linux` | Build and package for Linux (`.deb`, `.rpm`, `.flatpak`, `.zip`) |
+| `npm run package:linux:docker` | Build Linux packages inside an Ubuntu Docker container (macOS/Windows cross-build) |
+| `npm run package:full` | Package MiniServer first, then build and package the desktop app |
 
-## Where Developers Usually Edit
+## ⌨ Where Developers Usually Edit
 
 - UI pages and templates: `public/`
 - Frontend behavior and styles: `resources/assets/`
+- Backend behavior: `app/**`
 - Desktop behavior (window, tray, menu, shortcuts): `app/electron/`
 - Runtime config: `miniserver.json`
 
-## AI Skills Included
+## 🥷 AI Skills Included
 
 This repository includes AI skills that help coding agents work with BoxLang patterns.
 
@@ -226,9 +230,29 @@ This repository includes AI skills that help coding agents work with BoxLang pat
 - Mirror skills folder: `.claude/skills/`
 - Lock file for managed skill versions: `skills-lock.json`
 
+### Keeping Skills Up to Date
+
+Skills are managed via the `skills` CLI. To update all project skills to their latest versions:
+
+```bash
+npx skills update
+```
+
+To add a new skill package:
+
+```bash
+npx skills add ortus-boxlang/skills
+```
+
+To list currently installed skills:
+
+```bash
+npx skills list
+```
+
 If you add new project conventions, update the relevant skill or instruction so agents use them consistently.
 
-## Running Downloaded Builds (Unsigned)
+## 🏗 Running Builds (Unsigned)
 
 CI builds are not code-signed. Each OS has a security mechanism that blocks
 unsigned apps downloaded from the internet. Every ZIP release includes helper
@@ -284,7 +308,93 @@ sudo rpm -i "boxlang-starter-desktop-*.rpm"
 flatpak install --user "boxlang-starter-desktop-*.flatpak"
 ```
 
-## Troubleshooting
+## ✍️ Signing Your Builds
+
+Code signing removes the "untrusted app" warnings that end users otherwise see. Electron Forge handles signing at the **Package** (macOS) and **Make** (Windows) steps — you only need to supply credentials via environment variables.
+
+Full Forge docs: <https://www.electronforge.io/guides/code-signing>
+
+### macOS — Sign + Notarize
+
+macOS requires both **code signing** (Apple Developer ID Application certificate) and **notarization** (automated Apple malware scan) for apps distributed outside the Mac App Store.
+
+**Prerequisites:**
+
+1. Enroll in the [Apple Developer Program](https://developer.apple.com/programs/) ($99/yr).
+2. Install Xcode and download a **Developer ID Application** certificate from Xcode → Settings → Accounts.
+3. Verify: `security find-identity -p codesigning -v`
+
+**`forge.config.cjs` additions:**
+
+```js
+packagerConfig: {
+  osxSign: {}, // empty object enables signing with auto-detected identity
+  osxNotarize: {
+    appleId: process.env.APPLE_ID,
+    appleIdPassword: process.env.APPLE_PASSWORD, // app-specific password, not your login
+    teamId: process.env.APPLE_TEAM_ID
+  }
+}
+```
+
+**CI environment variables to set:**
+
+| Variable | Description |
+|----------|-------------|
+| `APPLE_ID` | Your Apple ID email |
+| `APPLE_PASSWORD` | App-specific password from [appleid.apple.com](https://appleid.apple.com) |
+| `APPLE_TEAM_ID` | 10-character team ID from Apple Developer portal |
+| `MAC_SIGNING_IDENTITY` | Enables the PKG maker (already wired in `forge.config.cjs`) |
+
+Full guide: <https://www.electronforge.io/guides/code-signing/code-signing-macos>
+
+---
+
+### Windows — Sign with a Certificate
+
+Windows apps are signed at the **Make** step on the Squirrel installer.
+
+**Option 1 — Traditional `.pfx` certificate** (OV/EV from DigiCert, Sectigo, etc.):
+
+> **Note:** Since June 2023, private keys must be stored on a FIPS 140 Level 2+ hardware token. Software-only OV certificates are no longer issued. Consult your CA for token-based signing.
+
+The `certificateFile` / `certificatePassword` fields are already present in `forge.config.cjs`:
+
+```js
+// maker-squirrel config — already in forge.config.cjs
+certificateFile:     process.env.WIN_CERT_FILE || undefined,
+certificatePassword: process.env.WIN_CERT_PASS || undefined
+```
+
+Set `WIN_CERT_FILE` (path to `.pfx`) and `WIN_CERT_PASS` in your CI environment.
+
+**Option 2 — Azure Trusted Signing** (cheapest, cloud-based, eliminates SmartScreen):
+
+1. Set up [Azure Trusted Signing](https://azure.microsoft.com/en-us/products/trusted-signing) in your Azure account.
+2. Install `dotenv-cli`: `npm i -D dotenv-cli`
+3. Update `@electron/windows-sign` to 1.2.2+: `npm update @electron/windows-sign`
+4. Create `.env.trustedsigning` (add to `.gitignore`):
+
+```env
+AZURE_CLIENT_ID=xxx
+AZURE_CLIENT_SECRET=xxx
+AZURE_TENANT_ID=xxx
+AZURE_METADATA_JSON=C:\path\to\metadata.json
+AZURE_CODE_SIGNING_DLIB=C:\path\to\Azure.CodeSigning.Dlib.dll
+SIGNTOOL_PATH=C:\path\to\signtool.exe
+```
+
+1. Prefix forge commands with `dotenv -e .env.trustedsigning --`:
+
+```json
+"package:win": "dotenv -e .env.trustedsigning -- electron-forge make --platform win32"
+```
+
+Full guide: <https://www.electronforge.io/guides/code-signing/code-signing-windows>
+
+---
+
+## 🆘 Troubleshooting
 
 ### Server fails to start
 

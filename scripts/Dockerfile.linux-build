@@ -1,0 +1,64 @@
+##############################################################################
+# BoxLang Desktop — Linux Build Image
+#
+# Builds .deb, .rpm, and .flatpak packages for the Electron app on Ubuntu.
+# This image is for cross-platform packaging from macOS/Windows only.
+# For production releases use the CI pipeline (ubuntu-latest runner).
+#
+# Usage:
+#   docker build -f scripts/Dockerfile.linux-build -t boxlang-linux-build .
+#   docker run --rm --privileged \
+#     -v "$(pwd)":/app \
+#     -v boxlang_linux_node_modules:/app/node_modules \
+#     boxlang-linux-build
+#
+# Or via npm:
+#   npm run package:linux:docker
+#
+# Requirements before running:
+#   - npm run package:miniserver  (populate runtime/bin + runtime/lib)
+##############################################################################
+FROM ubuntu:24.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+# flatpak-builder requires D-Bus and a proper sandbox that is not available
+# in a plain container. Set SKIP_FLATPAK=1 so forge.config.cjs excludes it.
+# Flatpak packages are built in CI (ubuntu-latest) where the environment is correct.
+ENV SKIP_FLATPAK=1
+
+# -----------------------------------------------------------------------------
+# System packages
+# -----------------------------------------------------------------------------
+RUN apt-get update && apt-get install -y --no-install-recommends \
+	# Core build tools
+	curl \
+	git \
+	ca-certificates \
+	gnupg \
+	zip \
+	unzip \
+	# .deb packaging
+	dpkg \
+	fakeroot \
+	# .rpm packaging
+	rpm \
+	# Java 21 (required by BoxLang MiniServer at runtime — not used during build,
+	# but electron-forge may inspect it)
+	openjdk-21-jdk \
+	&& rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------
+# Node.js 25 (via NodeSource)
+# -----------------------------------------------------------------------------
+RUN curl -fsSL https://deb.nodesource.com/setup_25.x | bash - \
+	&& apt-get install -y --no-install-recommends nodejs \
+	&& rm -rf /var/lib/apt/lists/*
+
+# -----------------------------------------------------------------------------
+# Working directory — the project is bind-mounted here at runtime
+# -----------------------------------------------------------------------------
+WORKDIR /app
+
+# Default command: install Linux-native node_modules, build assets,
+# then run Forge for the linux platform.
+CMD [ "bash", "-c", "npm ci && npm run build && npx electron-forge make --platform linux" ]

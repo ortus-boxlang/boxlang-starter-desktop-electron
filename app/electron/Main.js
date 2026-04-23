@@ -19,6 +19,7 @@
 import { app, BrowserWindow, nativeImage, dialog } from "electron";
 import { fileURLToPath } from 'url';
 import { mkdirSync, appendFileSync } from 'fs';
+import dotenv from "dotenv";
 
 // Import our modular components
 import { AppMenu } from './AppMenu.js';
@@ -30,72 +31,8 @@ import { TrayMenu } from './TrayMenu.js';
 const path = await import( "path" );
 process.env.PATH = process.env.PATH + ":/usr/local/bin";
 
+// Debugging Log File Setup
 let mainLogFilePath = null;
-
-function serializeLogArgs ( args ) {
-	return args.map( ( arg ) => {
-		if ( arg instanceof Error ) {
-			return `${arg.message}\n${arg.stack || ''}`;
-		}
-
-		if ( typeof arg === 'object' ) {
-			try {
-				return JSON.stringify( arg );
-			} catch {
-				return String( arg );
-			}
-		}
-
-		return String( arg );
-	} ).join( ' ' );
-}
-
-function appendMainLog ( level, args ) {
-	if ( !mainLogFilePath ) {
-		return;
-	}
-
-	try {
-		const line = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${serializeLogArgs( args )}\n`;
-		appendFileSync( mainLogFilePath, line, 'utf8' );
-	} catch {
-		// Ignore file logging failures to avoid breaking startup.
-	}
-}
-
-function setupMainProcessLogging () {
-	const originalConsole = {
-		log: console.log.bind( console ),
-		info: console.info.bind( console ),
-		warn: console.warn.bind( console ),
-		error: console.error.bind( console )
-	};
-
-	try {
-		app.setAppLogsPath();
-		const logsDir = app.getPath( 'logs' );
-		mkdirSync( logsDir, { recursive: true } );
-		mainLogFilePath = path.join( logsDir, 'main.log' );
-		appendMainLog( 'log', [ `==== App startup (pid ${process.pid}) ====` ] );
-	} catch ( error ) {
-		originalConsole.warn( 'Could not initialize file logging:', error.message );
-	}
-
-	[ 'log', 'info', 'warn', 'error' ].forEach( ( method ) => {
-		console[ method ] = ( ...args ) => {
-			appendMainLog( method, args );
-			originalConsole[ method ]( ...args );
-		};
-	} );
-
-	process.on( 'uncaughtException', ( error ) => {
-		appendMainLog( 'error', [ 'Uncaught exception', error ] );
-	} );
-
-	process.on( 'unhandledRejection', ( reason ) => {
-		appendMainLog( 'error', [ 'Unhandled rejection', reason ] );
-	} );
-}
 
 // Get the current file name
 const thisFileName = fileURLToPath( import.meta.url );
@@ -103,6 +40,10 @@ const thisFileName = fileURLToPath( import.meta.url );
 const thisDirName = path.dirname( thisFileName );
 // The path to the root of the project: two levels up from the current directory
 const projectRoot = path.resolve( thisDirName, "../../" );
+// Load project-level environment variables for the main process.
+dotenv.config( {
+	path: path.join( projectRoot, '.env' )
+} );
 // Environment detection
 const isDevelopment = process.env.NODE_ENV === 'development';
 const enableDevTools = isDevelopment || parseBoolean( process.env.BOXLANG_DEVTOOLS ) === true;
@@ -476,7 +417,7 @@ function createWindow () {
  * @param {string} routePath - The path to the route (e.g., "/api/status")
  * @returns {string} - The full URL to the route (e.g., "http://localhost:59700/api/status")
  */
-function buildLink ( routePath ) {
+function buildLink( routePath ) {
 	return `${globalSettings.serverOrigin}${routePath}`;
 }
 
@@ -487,7 +428,7 @@ function buildLink ( routePath ) {
  *
  * @returns {string} The resolved path
  */
-function resolveAsset ( ...p ) {
+function resolveAsset( ...p ) {
   return globalSettings.path.join( globalSettings.projectRoot, ...p );
 }
 
@@ -497,7 +438,7 @@ function resolveAsset ( ...p ) {
  *
  * @returns {boolean|undefined} - The parsed boolean, or undefined if it cannot be parsed
  */
-function parseBoolean ( value ) {
+function parseBoolean( value ) {
     if ( value == null ) {
         return undefined;
     }
@@ -521,11 +462,102 @@ function parseBoolean ( value ) {
  *
  * @returns {number|undefined} - The parsed number, or undefined if it cannot be parsed
  */
-function parseNumber ( value ) {
+function parseNumber( value ) {
     if ( value == null || value === '' ) {
         return undefined;
     }
 
     const parsed = Number( value );
     return Number.isFinite( parsed ) ? parsed : undefined;
+}
+
+/**
+ * Serialize log arguments into a string for logging.
+ *
+ * @param {Array} args - The arguments to serialize
+ *
+ * @returns {string} - The serialized log arguments
+ */
+function serializeLogArgs( args ) {
+	return args.map( ( arg ) => {
+		if ( arg instanceof Error ) {
+			return `${arg.message}\n${arg.stack || ''}`;
+		}
+
+		if ( typeof arg === 'object' ) {
+			try {
+				return JSON.stringify( arg );
+			} catch {
+				return String( arg );
+			}
+		}
+
+		return String( arg );
+	} ).join( ' ' );
+}
+
+/**
+ * Append a log entry to the main log file with a timestamp and log level.
+ *
+ * @param {string} level - The log level (e.g., 'log', 'info', 'warn', 'error')
+ * @param {Array} args - The arguments to log
+ */
+function appendMainLog( level, args ) {
+	if ( !mainLogFilePath ) {
+		return;
+	}
+
+	try {
+		const line = `[${new Date().toISOString()}] [${level.toUpperCase()}] ${serializeLogArgs( args )}\n`;
+		appendFileSync( mainLogFilePath, line, 'utf8' );
+	} catch {
+		// Ignore file logging failures to avoid breaking startup.
+	}
+}
+
+/**
+ * Setup logging for the main process to write to a file in the user's logs directory.
+ * This will capture all console output and uncaught exceptions/rejections.
+ */
+function setupMainProcessLogging() {
+	// Keep a reference to the original console methods so we can still log to the console while also writing to the file.
+	const originalConsole = {
+		log: console.log.bind( console ),
+		info: console.info.bind( console ),
+		warn: console.warn.bind( console ),
+		error: console.error.bind( console )
+	};
+
+	try {
+		// Set the app logs path and ensure the directory exists
+		app.setAppLogsPath();
+		// Use the logs directory provided by Electron, which is platform-appropriate
+		const logsDir = app.getPath( 'logs' );
+		// Ensure the logs directory exists
+		mkdirSync( logsDir, { recursive: true } );
+		// Set the main log file path
+		mainLogFilePath = path.join( logsDir, 'main.log' );
+		// Log the startup message
+		appendMainLog( 'log', [ `==== App startup (pid ${process.pid}) ====` ] );
+	} catch ( error ) {
+		originalConsole.warn( 'Could not initialize file logging:', error.message );
+	}
+
+	// Override console methods to also write to the log file
+	[ 'log', 'info', 'warn', 'error' ].forEach( ( method ) => {
+		console[ method ] = ( ...args ) => {
+			appendMainLog( method, args );
+			originalConsole[ method ]( ...args );
+		};
+	} );
+
+	// Capture uncaught exceptions and unhandled promise rejections
+	process.on( 'uncaughtException', ( error ) => {
+		appendMainLog( 'error', [ 'Uncaught exception', error ] );
+	} );
+
+	// Capture unhandled promise rejections
+	process.on( 'unhandledRejection', ( reason ) => {
+		appendMainLog( 'error', [ 'Unhandled rejection', reason ] );
+	} );
 }

@@ -26,7 +26,8 @@
 	"author": "Ortus Solutions, Corp",
 	"dependencies": {
 		"alpinejs": "^3.14.0",
-		"bootstrap": "^5.3.0"
+		"bootstrap": "^5.3.0",
+		"dotenv": "^16.6.1"
 	},
 	"devDependencies": {
 		"@electron-forge/cli": "^7.11.1",

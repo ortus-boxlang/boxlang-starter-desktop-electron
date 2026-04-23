@@ -33,7 +33,6 @@ process.env.PATH = process.env.PATH + ":/usr/local/bin";
 
 // Debugging Log File Setup
 let mainLogFilePath = null;
-
 // Get the current file name
 const thisFileName = fileURLToPath( import.meta.url );
 // Get the name of the directory
@@ -61,6 +60,7 @@ let boxLang;
  * --------------------------------------------------------
  *  You can change these settings to customize the app as you see fit.
  */
+const APP_NAME = "BoxLang Starter Desktop"
 const APP_DIRECTORY_NAME = "boxlang-starter-desktop"
 const APP_SERVER_PORT = process.env.BOXLANG_PORT ? parseNumber( process.env.BOXLANG_PORT ) : 59700
 const APP_HOME = process.env.BOXLANG_HOME
@@ -69,11 +69,11 @@ const APP_HOME = process.env.BOXLANG_HOME
 const APP_HOME_SOURCE = process.env.BOXLANG_HOME ? 'env BOXLANG_HOME' : 'default user home'
 
 if( isDevelopment ) {
-	console.log( '[BoxLang] Running in development mode' );
-	console.log( '[BoxLang] App home (' + APP_HOME_SOURCE + '): ' + APP_HOME )
+	console.log( `[${APP_NAME}] Running in development mode` );
+	console.log( `[${APP_NAME}] App home (${APP_HOME_SOURCE}): ${APP_HOME}` );
 }
 if ( enableDevTools && !isDevelopment ) {
-	console.log( '[BoxLang] DevTools enabled via BOXLANG_DEVTOOLS' );
+	console.log( `[${APP_NAME}] DevTools enabled via BOXLANG_DEVTOOLS` );
 }
 
 const globalSettings = {
@@ -91,7 +91,7 @@ const globalSettings = {
 	// The server origin URL (used for API calls, etc.)
     serverOrigin: `http://localhost:${APP_SERVER_PORT}`,
 	// Window Defaults
-    appName: "BoxLang Starter Desktop",
+    appName: APP_NAME,
     windowHeight: 1024,
     windowWidth: 1300,
     // Project paths
@@ -103,7 +103,7 @@ const globalSettings = {
 };
 
 setupMainProcessLogging();
-console.log( '[BoxLang] Main process log file:', mainLogFilePath || 'not available' );
+console.log( `[${APP_NAME}] Main process log file:`, mainLogFilePath || 'not available' );
 
 // Set app name early (before app is ready)
 app.setName( globalSettings.appName );

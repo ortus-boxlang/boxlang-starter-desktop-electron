@@ -293,7 +293,7 @@ export class BoxLang {
         const spawnOptions = {
             cwd: this.globalSettings.projectRoot,
             detached: false,
-            shell: false,
+            shell: process.platform === 'win32',
             windowsHide: true,
             env: {
                 ...process.env,

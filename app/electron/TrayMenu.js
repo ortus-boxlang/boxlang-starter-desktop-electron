@@ -15,44 +15,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Tray, Menu, nativeImage, shell } from 'electron';
+import { Tray, Menu, nativeImage } from 'electron';
 
 /**
  * TrayMenu class - Manages system tray functionality
  */
 export class TrayMenu {
+
+	/**
+	 * Constructor for TrayMenu
+	 *
+	 * @param {*} globalSettings - Global settings for the application
+	 */
     constructor( globalSettings ) {
         this.globalSettings = globalSettings;
         this.tray = null;
-        this.boxLang = null;
         this.mainWindow = null;
-        this.appIsQuitting = false;
     }
 
     /**
      * Set references to external components
+     *
+     * @param {Object} references - An object containing references to external components
+     * @param {BrowserWindow} references.mainWindow - Reference to the main application window
      */
-    setReferences( { boxLang, mainWindow, appIsQuitting } ) {
-        this.boxLang = boxLang;
+    setReferences( { mainWindow } ) {
         this.mainWindow = mainWindow;
-        this.appIsQuitting = appIsQuitting;
     }
 
     /**
      * Create system tray
      */
     create( callbacks = {} ) {
-        // Use a smaller icon for the tray (16x16 is typical)
-        const trayIcon = nativeImage.createFromPath( this.resolveAsset( 'public', 'includes', 'icon.iconset', 'icon_16x16.png' ) );
+		// Create the Tray instance with the application icon
+        this.tray = new Tray(
+			nativeImage.createFromPath( this.resolveAsset( 'public', 'includes', 'icon.iconset', 'icon_16x16.png' ) )
+		 );
 
-        if ( trayIcon.isEmpty() ) {
-            // Fallback if the specific tray icon doesn't exist
-            console.warn( '[TrayMenu] Tray icon not found: public/includes/icon.iconset/icon_16x16.png' );
-            return;
-        }
-
-        this.tray = new Tray( trayIcon );
-
+		 // Build the context menu for the tray
         const contextMenu = Menu.buildFromTemplate( [
             {
                 label: 'Show Application',
@@ -75,20 +75,6 @@ export class TrayMenu {
             },
             { type: 'separator' },
             {
-                label: `Server Status: ${this.boxLang && this.boxLang.isRunning() ? 'Running' : 'Stopped'}`,
-                enabled: false
-            },
-            {
-                label: 'Restart BoxLang Server',
-                click: () => callbacks.restartBoxLang?.()
-            },
-            { type: 'separator' },
-            {
-                label: 'Open in Browser',
-                click: () => shell.openExternal( `http://localhost:${this.globalSettings.serverPort}` )
-            },
-            { type: 'separator' },
-            {
                 label: 'Quit',
                 click: () => {
                     callbacks.quit?.();
@@ -96,15 +82,14 @@ export class TrayMenu {
             }
         ] );
 
+		// Set the context menu for the tray
         this.tray.setContextMenu( contextMenu );
-        this.tray.setToolTip( `${this.globalSettings.appName} - Port: ${this.globalSettings.serverPort}` );
+		this.tray.setToolTip( `${this.globalSettings.appName}` );
 
-        // Click to show/hide window
+        // Click to show/hide window if you click the tray icon directly
         this.tray.on( 'click', () => {
             if ( this.mainWindow ) {
-                if ( this.mainWindow.isVisible() && this.mainWindow.isFocused() ) {
-                    this.mainWindow.hide();
-                } else {
+                if ( !this.mainWindow.isVisible() || !this.mainWindow.isFocused() ) {
                     this.mainWindow.show();
                     this.mainWindow.focus();
                 }
@@ -115,50 +100,8 @@ export class TrayMenu {
     }
 
     /**
-     * Update tray context menu with current server status
-     */
-    updateMenu( callbacks = {} ) {
-        if ( !this.tray ) return;
-
-        const isRunning = this.boxLang && this.boxLang.isRunning();
-        const contextMenu = Menu.buildFromTemplate( [
-            {
-                label: 'Show Application',
-                click: () => {
-                    if ( this.mainWindow ) {
-                        this.mainWindow.show();
-                        this.mainWindow.focus();
-                    } else {
-                        callbacks.createWindow?.();
-                    }
-                }
-            },
-            {
-                label: 'Open in Browser',
-                click: () => shell.openExternal( `http://localhost:${this.globalSettings.serverPort}` )
-            },
-            { type: 'separator' },
-            {
-                label: `Server Status: ${isRunning ? 'Running' : 'Stopped'}`,
-                enabled: false
-            },
-            {
-                label: 'Restart Server',
-                click: () => callbacks.restartBoxLang?.()
-            },
-            { type: 'separator' },
-            {
-                label: 'Quit',
-                click: () => {
-                    callbacks.quit?.();
-                }
-            }
-        ] );
-        this.tray.setContextMenu( contextMenu );
-    }
-
-    /**
      * Whether a tray instance currently exists
+	 *
      * @returns {boolean}
      */
     hasTray() {

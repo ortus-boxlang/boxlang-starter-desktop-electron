@@ -15,16 +15,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { spawn } from "child_process";
+import { spawn, spawnSync } from "child_process";
 import { dialog, Notification, app } from "electron";
 import { existsSync, chmodSync, accessSync, constants as fsConstants } from "fs";
+import { createServer } from "net";
 const path = await import( "path" );
 
 // Centralized configuration for timeouts and intervals
-const STARTUP_TIMEOUT_MS = 30000;
+const STARTUP_TIMEOUT_MS = 60000;
 const READINESS_RETRY_INTERVAL_MS = 500;
-const RESTART_DELAY_MS = 5000;
-const MANUAL_RESTART_DELAY_MS = 1000;
+const JAVA_CHECK_VISIBILITY_DELAY_MS = 1500;
 
 /**
  * Utility function to create a delay
@@ -49,26 +49,77 @@ export class BoxLang {
         this.process = null;
         this.isQuitting = false;
         this.state = 'stopped';
-        this.restartTimer = null;
         this.startSequence = 0;
         this.startPromise = null;
-        this.restartRequested = false;
-        this.blockAutoRestart = false;
 
         // References that will be set later
         this.mainWindow = null;
-        this.updateCallback = null;
+
+        // Prefer the embedded JRE (runtime/jre/) over the system Java install.
+        // Done before detectMiniServerCommand() so child processes spawned later
+        // (MiniServer, terminal panel, REPL, etc.) all inherit JAVA_HOME.
+        this.applyEmbeddedJavaHome();
 
         // Determine the miniserver command to use
         this.miniserverCommand = this.detectMiniServerCommand();
     }
 
     /**
+     * Resolve the path to an embedded JRE at runtime/jre/, if one exists.
+     *
+     * @returns {string|null} Absolute path to the embedded JAVA_HOME, or null.
+     */
+    detectEmbeddedJavaHome () {
+        const { projectRoot } = this.globalSettings;
+        const embeddedHome = path.join( projectRoot, 'runtime', 'jre' );
+        const javaExecutable = process.platform === 'win32' ? 'java.exe' : 'java';
+        const javaPath = path.join( embeddedHome, 'bin', javaExecutable );
+        return existsSync( javaPath ) ? embeddedHome : null;
+    }
+
+    /**
+     * When an embedded JRE is present and the user has not overridden
+     * JAVA_HOME explicitly, point JAVA_HOME + PATH at the embedded runtime
+     * so every subsequent spawn (and the launcher scripts under runtime/bin)
+     * picks it up automatically.
+     */
+    applyEmbeddedJavaHome () {
+        const embeddedHome = this.detectEmbeddedJavaHome();
+        if ( !embeddedHome ) {
+            return;
+        }
+
+        const forceEmbeddedJava = app?.isPackaged && process.env.BOXLANG_ADMIN_ALLOW_SYSTEM_JAVA !== '1';
+
+        if ( forceEmbeddedJava ) {
+            const previousJavaHome = process.env.JAVA_HOME;
+            process.env.JAVA_HOME = embeddedHome;
+            process.env.PATH = path.join( embeddedHome, 'bin' ) + path.delimiter + ( process.env.PATH || '' );
+
+            if ( previousJavaHome && previousJavaHome !== embeddedHome ) {
+                console.log( `✅ Using embedded JRE: ${embeddedHome} (overriding JAVA_HOME=${previousJavaHome} in packaged mode)` );
+            } else {
+                console.log( `✅ Using embedded JRE: ${embeddedHome}` );
+            }
+            return;
+        }
+
+        if ( process.env.JAVA_HOME ) {
+            console.log( `ℹ️  Embedded JRE available at ${embeddedHome}, but JAVA_HOME=${process.env.JAVA_HOME} is already set — honoring user override.` );
+            return;
+        }
+
+        process.env.JAVA_HOME = embeddedHome;
+        process.env.PATH = path.join( embeddedHome, 'bin' ) + path.delimiter + ( process.env.PATH || '' );
+        console.log( `✅ Using embedded JRE: ${embeddedHome}` );
+    }
+
+    /**
      * Send a desktop notification
 	 *
-     * @param {string} title
-     * @param {string} body
-     */
+      * @param {string} title
+      * @param {string} body
+      */
     notify ( title, body ) {
         if ( Notification.isSupported() ) {
             new Notification( { title, body } ).show();
@@ -78,8 +129,8 @@ export class BoxLang {
     /**
      * Set the macOS dock badge text. Pass empty string to clear it.
 	 *
-     * @param {string} text
-     */
+      * @param {string} text
+      */
     setDockBadge ( text ) {
         if ( process.platform === 'darwin' && app?.dock ) {
             app.dock.setBadge( text );
@@ -89,8 +140,8 @@ export class BoxLang {
     /**
      * Set taskbar progress bar. Pass -1 to remove, 2 for indeterminate (pulsing).
 	 *
-     * @param {number} value
-     */
+      * @param {number} value
+      */
     setProgressBar ( value ) {
         if ( this.mainWindow && !this.mainWindow.isDestroyed() ) {
             this.mainWindow.setProgressBar( value );
@@ -100,8 +151,8 @@ export class BoxLang {
     /**
      * Draw user attention: flash taskbar (Windows/Linux) or bounce dock (macOS).
 	 *
-     * @param {'critical'|'informational'} type  macOS bounce type (ignored on other platforms)
-     */
+      * @param {'critical'|'informational'} type  macOS bounce type (ignored on other platforms)
+      */
     requestAttention ( type = 'critical' ) {
         if ( process.platform === 'darwin' && app?.dock ) {
             app.dock.bounce( type );
@@ -111,22 +162,12 @@ export class BoxLang {
     }
 
 	/**
-     * Set external references
+      * Set external references
 	 *
-     * @param {Object} refs - Object containing mainWindow and other references
-     */
+      * @param {Object} refs - Object containing mainWindow and other references
+      */
     setReferences ( refs ) {
         this.mainWindow = refs.mainWindow;
-        this.updateCallback = refs.updateCallback;
-    }
-
-	/**
-	 * Call the update callback to notify about status changes
-	 */
-    updateStatus () {
-        if ( this.updateCallback ) {
-            this.updateCallback();
-        }
     }
 
 	/**
@@ -136,16 +177,6 @@ export class BoxLang {
 	 */
     getServerUrl () {
         return `${this.globalSettings.serverOrigin}/`;
-    }
-
-	/**
-	 * Clear any pending restart timers
-	 */
-    clearRestartTimer () {
-        if ( this.restartTimer ) {
-            clearTimeout( this.restartTimer );
-            this.restartTimer = null;
-        }
     }
 
 	/**
@@ -183,10 +214,119 @@ export class BoxLang {
     }
 
     /**
+	 * Show a startup error on the loading screen renderer.
+	 *
+      * @param {string} title
+      * @param {string} message
+      * @param {string} [linkText]
+      * @param {string} [linkUrl]
+      */
+    showLoadingError ( title, message, linkText = '', linkUrl = '' ) {
+        const mainWindow = this.getSafeWindow();
+
+        if ( !mainWindow ) {
+            return;
+        }
+
+        const serializedTitle = JSON.stringify( String( title || '' ) );
+        const serializedMessage = JSON.stringify( String( message || '' ) );
+        const serializedLinkText = JSON.stringify( String( linkText || '' ) );
+        const serializedLinkUrl = JSON.stringify( String( linkUrl || '' ) );
+
+        mainWindow.webContents
+            .executeJavaScript(
+                `window.showLoadingError?.(${serializedTitle}, ${serializedMessage}, ${serializedLinkText}, ${serializedLinkUrl});`,
+                true
+            )
+            .catch( ( error ) => {
+                console.warn( 'Could not render loading error in renderer:', error.message );
+            } );
+    }
+
+    /**
+	 * Show the Java preflight status text on the loading screen.
+	 *
+	 * @param {string} message
+	 */
+    showJavaCheckStatus ( message = 'Checking For Java...' ) {
+        const mainWindow = this.getSafeWindow();
+
+        if ( !mainWindow ) {
+            return;
+        }
+
+        const serializedMessage = JSON.stringify( String( message ) );
+        mainWindow.webContents
+            .executeJavaScript( `window.setJavaCheckStatus?.(${serializedMessage});`, true )
+            .catch( ( error ) => {
+                console.warn( 'Could not render Java check status in renderer:', error.message );
+            } );
+    }
+
+    /**
+	 * Hide the Java preflight status text on the loading screen.
+	 */
+    clearJavaCheckStatus () {
+        const mainWindow = this.getSafeWindow();
+
+        if ( !mainWindow ) {
+            return;
+        }
+
+        mainWindow.webContents
+            .executeJavaScript( 'window.clearJavaCheckStatus?.();', true )
+            .catch( ( error ) => {
+                console.warn( 'Could not clear Java check status in renderer:', error.message );
+            } );
+    }
+
+    /**
+	 * Check whether Java is available via JAVA_HOME or PATH.
+	 *
+	 * @returns {boolean}
+	 */
+    checkJavaAvailable () {
+        const javaExecutable = process.platform === 'win32' ? 'java.exe' : 'java';
+        const javaHome = process.env.JAVA_HOME;
+
+        if ( javaHome ) {
+            const javaFromHome = path.join( javaHome, 'bin', javaExecutable );
+            if ( existsSync( javaFromHome ) ) {
+                return true;
+            }
+        }
+
+        try {
+            if ( process.platform === 'darwin' ) {
+                const javaHomeResult = spawnSync( '/usr/libexec/java_home', [], { timeout: 3000 } );
+                if ( javaHomeResult.status === 0 ) {
+                    return true;
+                }
+            }
+
+            if ( process.platform === 'win32' ) {
+                const whereResult = spawnSync( 'where', [ 'java' ], { timeout: 3000, shell: true } );
+                if ( whereResult.status === 0 ) {
+                    return true;
+                }
+            } else {
+                const whichResult = spawnSync( 'which', [ 'java' ], { timeout: 3000 } );
+                if ( whichResult.status === 0 ) {
+                    return true;
+                }
+            }
+        } catch ( error ) {
+            console.warn( `Java availability check failed: ${error.message}` );
+        }
+
+        return false;
+    }
+
+    /**
      * Set quitting state
 	 *
-     * @param {boolean} quitting - Whether the app is quitting
-     */
+      * @param {boolean} quitting - Whether the app is quitting
+      */
     setQuitting ( quitting ) {
         this.isQuitting = quitting;
     }
@@ -194,8 +334,8 @@ export class BoxLang {
     /**
      * Detect which miniserver command to use
 	 *
-     * @returns {Object} Command info with path and type
-     */
+      * @returns {Object} Command info with path and type
+      */
     detectMiniServerCommand () {
         const { projectRoot, path } = this.globalSettings;
 
@@ -248,8 +388,8 @@ export class BoxLang {
     /**
      * Get the current process
 	 *
-     * @returns {ChildProcess|null} The BoxLang process
-     */
+      * @returns {ChildProcess|null} The BoxLang process
+      */
     getProcess () {
         return this.process;
     }
@@ -257,8 +397,8 @@ export class BoxLang {
     /**
      * Check if the server is running
 	 *
-     * @returns {boolean} True if running
-     */
+      * @returns {boolean} True if running
+      */
     isRunning () {
         return [ 'starting', 'running' ].includes( this.state ) && this.process && !this.process.killed;
     }
@@ -266,24 +406,57 @@ export class BoxLang {
     /**
      * Start the BoxLang miniserver
      */
-    start () {
+    async start () {
         if ( this.state === 'starting' || this.state === 'running' ) {
             console.log( `BoxLang server is already ${this.state}` );
             return this.startPromise;
         }
+
+        this.showJavaCheckStatus( 'Checking For Java...' );
+        await delay( JAVA_CHECK_VISIBILITY_DELAY_MS );
+
+        if ( !this.checkJavaAvailable() ) {
+            this.process = null;
+            this.startPromise = null;
+            this.state = 'stopped';
+            this.setProgressBar( -1 );
+            this.setDockBadge( '' );
+
+            const errorMessage = 'Java was not found on this system. BoxLang MiniServer requires Java 21. Please install Java 21 and relaunch BoxLang Admin.';
+            this.showLoadingError(
+                'Java 21 Required',
+                errorMessage,
+                'Download Java 21',
+                'https://adoptium.net/temurin/releases/?version=21'
+            );
+            this.logRendererError( errorMessage );
+            return null;
+        }
+
+        this.clearJavaCheckStatus();
+
+        // Probe for an available port before starting the server.
+        // If the preferred port is in use, find a random available one.
+        const resolvedPort = await this.findAvailablePort( this.globalSettings.serverPort );
+        // Update globalSettings so the rest of the app uses the resolved port
+        this.globalSettings.serverPort = resolvedPort;
+        this.globalSettings.serverOrigin = `http://localhost:${resolvedPort}`;
 
         console.log( "Starting BoxLang mini server..." );
         console.log( `Using ${this.miniserverCommand.type} miniserver: ${this.miniserverCommand.command}` );
 
         this.ensurePackagedCommandExecutable();
 
-        this.clearRestartTimer();
-        this.blockAutoRestart = false;
-        this.restartRequested = false;
+        const miniserverArgs = [
+            "--serverHome",
+            path.join( this.globalSettings.appHome, "home" ),
+            this.globalSettings.serverDebugMode ? "--debug" : "",
+            path.join( this.globalSettings.projectRoot, "miniserver.json" )
+        ].filter( Boolean );
+
         this.state = 'starting';
         this.startSequence += 1;
         const startSequence = this.startSequence;
-        this.updateStatus();
 
         // Show indeterminate progress bar while server is starting
         this.setProgressBar( 2 );
@@ -293,13 +466,29 @@ export class BoxLang {
         const spawnOptions = {
             cwd: this.globalSettings.projectRoot,
             detached: false,
+            // .bat files on Windows require shell:true — spawning them directly causes EINVAL
             shell: process.platform === 'win32',
             windowsHide: true,
             env: {
                 ...process.env,
-                BOXLANG_HOME: this.globalSettings.appHome
+                BOXLANG_HOME: this.globalSettings.appHome,
+				BOXLANG_PORT: this.globalSettings.serverPort
             }
         };
+
+        // On macOS, explicitly set JAVA_HOME if not already present
+        // (Electron apps don't inherit shell environment variables)
+        if ( process.platform === 'darwin' && !spawnOptions.env.JAVA_HOME ) {
+            try {
+                const javaHomeResult = spawnSync( '/usr/libexec/java_home', [], { timeout: 3000 } );
+                if ( javaHomeResult.status === 0 ) {
+                    spawnOptions.env.JAVA_HOME = javaHomeResult.stdout.toString().trim();
+                    console.log( `✅ Set JAVA_HOME from java_home: ${spawnOptions.env.JAVA_HOME}` );
+                }
+            } catch ( error ) {
+                console.warn( `Could not detect JAVA_HOME: ${error.message}` );
+            }
+        }
 
         // For packaged miniserver, we need to set up the environment
         if ( this.miniserverCommand.type === 'packaged' ) {
@@ -316,20 +505,24 @@ export class BoxLang {
             }
         }
 
-        // Start up the boxlang mini server
-        this.process = spawn(
-            // Command
-            this.miniserverCommand.command,
-            // Pass miniserver.json as the config file — the server reads all settings from it.
-            // Only --debug is passed as a CLI override when running in development mode,
-            // since miniserver.json ships with debug:false.
-            [
-                "miniserver.json",
-                this.globalSettings.serverDebugMode ? "--debug" : ""
-            ].filter( Boolean ),
-            // Spawn Options
-            spawnOptions
-        );
+        let spawnCommand = this.miniserverCommand.command;
+        let spawnArgs = miniserverArgs;
+
+        // Some Linux installs can land packaged files without +x and app binaries
+        // under /usr/lib are not writable for post-install chmod fixes.
+        // In that case, run the launcher script through /bin/sh.
+        if ( this.miniserverCommand.type === 'packaged' && process.platform !== 'win32' ) {
+            try {
+                accessSync( this.miniserverCommand.command, fsConstants.X_OK );
+            } catch {
+                spawnCommand = '/bin/sh';
+                spawnArgs = [ this.miniserverCommand.command, ...miniserverArgs ];
+                console.warn( `⚠️  Packaged miniserver is not executable, launching via /bin/sh fallback: ${this.miniserverCommand.command}` );
+            }
+        }
+
+        // Start up the BoxLang mini server.
+        this.process = spawn( spawnCommand, spawnArgs, spawnOptions );
 
         // Handle stderr
         this.process.stderr.on( "data", ( data ) => {
@@ -342,9 +535,11 @@ export class BoxLang {
         } );
 
         // Handle process close
-        this.process.on( "close", ( code ) => {
-            console.log( `BoxLang process exited with code ${code}` );
-            const wasRestartRequested = this.restartRequested;
+        this.process.on( "close", ( code, signal ) => {
+            console.log( `BoxLang process exited with code ${code}${signal ? ` (signal ${signal})` : ''}` );
+            const previousState = this.state;
+            const exitedDuringStartup = previousState === 'starting';
+            const crashedAfterRunning = previousState === 'running' && Number.isInteger( code ) && code !== 0;
 
             this.process = null;
             this.startPromise = null;
@@ -354,35 +549,32 @@ export class BoxLang {
             this.setProgressBar( -1 );
             this.setDockBadge( '' );
 
-            // Notify about status change
-            this.updateStatus();
-
-            // Auto-restart on unexpected exit (not during app shutdown)
-            if ( !this.isQuitting && !wasRestartRequested && !this.blockAutoRestart && code !== 0 ) {
-                console.log( "BoxLang server crashed, attempting restart in 5 seconds..." );
+            if ( !this.isQuitting && exitedDuringStartup ) {
                 this.notify(
-                    'BoxLang Server Crashed',
-                    `Server stopped unexpectedly (code ${code}). Restarting in 5 seconds…`
+                    'BoxLang Server Failed To Start',
+                    `Server exited during startup${Number.isInteger( code ) ? ` (code ${code})` : ''}.`
                 );
                 this.requestAttention( 'critical' );
-                this.restartTimer = setTimeout( () => {
-                    if ( !this.isQuitting ) {
-                        this.start();
-                    }
-                }, RESTART_DELAY_MS );
+            }
+
+            // Crashing is handled by notifying the user and letting them restart the app.
+            if ( !this.isQuitting && crashedAfterRunning ) {
+                this.notify(
+                    'BoxLang Server Crashed',
+                    `Server stopped unexpectedly (code ${code}). Please restart the application.`
+                );
+                this.requestAttention( 'critical' );
             }
         } );
 
         // Handle process error
         this.process.on( "error", ( error ) => {
             console.error( "Failed to start BoxLang server:", error );
-            this.blockAutoRestart = true;
             this.state = 'stopped';
             this.startPromise = null;
             this.process = null;
             this.setProgressBar( -1 );
             this.setDockBadge( '' );
-            this.updateStatus();
 
             let errorMessage = `Failed to start BoxLang server: ${error.message}\n\n`;
 
@@ -415,40 +607,19 @@ export class BoxLang {
      * @param {string} signal - The signal to send (default: SIGTERM)
      */
     stop ( signal = 'SIGTERM' ) {
-        this.clearRestartTimer();
-
         if ( this.process && !this.process.killed ) {
             this.state = 'stopping';
-            this.updateStatus();
             try {
                 this.process.kill( signal );
             } catch {
                 console.warn( "BoxLang process already killed." );
                 this.process = null;
                 this.state = 'stopped';
-                this.updateStatus();
             }
         } else {
             this.process = null;
             this.state = 'stopped';
-            this.updateStatus();
         }
-    }
-
-    /**
-     * Restart the BoxLang server
-     */
-    restart () {
-        console.log( "Restarting BoxLang server..." );
-        this.notify( 'BoxLang Server', 'Restarting server…' );
-        this.restartRequested = true;
-        this.clearRestartTimer();
-        this.stop();
-
-        this.restartTimer = setTimeout( () => {
-            this.restartRequested = false;
-            this.start();
-        }, MANUAL_RESTART_DELAY_MS );
     }
 
     /**
@@ -486,11 +657,10 @@ export class BoxLang {
             await delay( READINESS_RETRY_INTERVAL_MS );
         }
 
-        this.blockAutoRestart = true;
         this.stop();
         dialog.showErrorBox(
             'Server Startup Timeout',
-            `BoxLang MiniServer did not become reachable within ${STARTUP_TIMEOUT_MS / 1000} seconds.\n\nChecked URL: ${serverUrl}\n\nVerify miniserver.json and try restarting the app.`
+            `BoxLang Admin did not become reachable within ${STARTUP_TIMEOUT_MS / 1000} seconds.\n\nChecked URL: ${serverUrl}\n\nVerify miniserver.json and try restarting the app.`
         );
     }
 
@@ -506,10 +676,8 @@ export class BoxLang {
         this.setProgressBar( -1 );
         this.setDockBadge( '' );
         this.startPromise = null;
-        this.updateStatus();
         this.notify(
-            'BoxLang Server Started',
-            `Server is running on port ${serverPort}`
+            'BoxLang Admin Started'
         );
 
         if ( mainWindow ) {
@@ -559,5 +727,46 @@ export class BoxLang {
             ? path.join( projectRoot, 'runtime', 'bin', 'boxlang-miniserver.bat' )
             : path.join( projectRoot, 'runtime', 'bin', 'boxlang-miniserver' );
         return existsSync( packagedCommand );
+    }
+
+    /**
+     * Check if a port is available by attempting to bind to it.
+     * @param {number} port - The port to check
+     * @param {string} host - The host to bind to (default: '127.0.0.1')
+     * @returns {Promise<boolean>} True if port is available
+     */
+    isPortAvailable ( port, host = '127.0.0.1' ) {
+        return new Promise( ( resolve ) => {
+            const server = createServer();
+            server.once( 'error', () => resolve( false ) );
+            server.once( 'listening', () => {
+                server.close( () => resolve( true ) );
+            } );
+            server.listen( port, host );
+        } );
+    }
+
+    /**
+     * Find an available port, starting with the preferred port.
+     * If the preferred port is unavailable, try random ports in the range 49152-65535.
+     * @param {number} preferredPort - The preferred port to try first
+     * @param {number} maxAttempts - Maximum number of random port attempts (default: 10)
+     * @returns {Promise<number>} An available port number
+     */
+    async findAvailablePort ( preferredPort, maxAttempts = 10 ) {
+        // Try preferred port first
+        if ( await this.isPortAvailable( preferredPort ) ) {
+            return preferredPort;
+        }
+
+        // Try random ports in the ephemeral range
+        for ( let i = 0; i < maxAttempts; i++ ) {
+            const randomPort = Math.floor( Math.random() * ( 65535 - 49152 + 1 ) ) + 49152;
+            if ( await this.isPortAvailable( randomPort ) ) {
+                return randomPort;
+            }
+        }
+
+        throw new Error( `Could not find an available port after ${maxAttempts} attempts` );
     }
 }

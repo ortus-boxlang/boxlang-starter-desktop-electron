@@ -16,7 +16,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { app, BrowserWindow, nativeImage, dialog } from "electron";
+import { app, BrowserWindow, nativeImage, dialog, ipcMain, shell, clipboard } from "electron";
 import { fileURLToPath } from 'url';
 import { mkdirSync, appendFileSync } from 'fs';
 import dotenv from "dotenv";
@@ -136,6 +136,60 @@ process.on( 'SIGTERM', () => { boxLang.stop(); app.quit(); } );
  * Create the main application window once Electron is ready
  */
 app.whenReady().then( () => {
+	ipcMain.handle( "boxlang-starter:pick-path", async ( _event, options = {} ) => {
+		const properties = options.mode === "directory"
+			? [ "openDirectory", "dontAddToRecent" ]
+			: [ "openFile", "dontAddToRecent" ]
+
+		const result = await dialog.showOpenDialog( mainWindow, {
+			title: options.title || "Choose a path",
+			properties,
+			filters: options.filters || undefined
+		} )
+
+		return {
+			canceled: result.canceled,
+			path: result.filePaths?.[ 0 ] || ""
+		}
+	} )
+
+	ipcMain.handle( "boxlang-starter:open-path", async ( _event, { path } = {} ) => {
+		if ( !path ) {
+			return { success: false, error: "No path provided" }
+		}
+
+		try {
+			await shell.openPath( path )
+			return { success: true }
+		} catch ( error ) {
+			return { success: false, error: error.message }
+		}
+	} )
+
+	ipcMain.handle( "boxlang-starter:open-external", async ( _event, { url } = {} ) => {
+		if ( !url ) {
+			return { success: false, error: "No URL provided" }
+		}
+
+		let parsedUrl
+		try {
+			parsedUrl = new URL( url )
+		} catch {
+			return { success: false, error: "Invalid URL provided" }
+		}
+
+		if ( ![ "http:", "https:" ].includes( parsedUrl.protocol ) ) {
+			return { success: false, error: "Only HTTP/HTTPS URLs are allowed" }
+		}
+
+		try {
+			await shell.openExternal( parsedUrl.toString() )
+			return { success: true }
+		} catch ( error ) {
+			return { success: false, error: error.message }
+		}
+	} )
+
 	// Ensure app name is set (sometimes needed for development)
 	app.setName( globalSettings.appName );
 
@@ -154,10 +208,16 @@ app.whenReady().then( () => {
 		showOrCreateWindow: showOrCreateWindow,
 		reloadWindow: reloadWindow,
 		forceReloadWindow: forceReloadWindow,
+		quit: handleQuit,
+		showOrCreateWindow: showOrCreateWindow,
+		reloadWindow: reloadWindow,
+		forceReloadWindow: forceReloadWindow,
 		restartBoxLang: () => boxLang.restart(),
 		closeWindow: closeWindow,
 		toggleDevTools: toggleDevTools,
-		showAbout: showAboutDialog
+		showAbout: showAboutDialog,
+		openLogsFolder: openLogsFolder,
+		copyStartupDiagnostics: copyStartupDiagnostics
 	} );
 
 	// Create the main application window
@@ -329,8 +389,50 @@ function showAboutDialog () {
 }
 
 /**
- * Create the main application window
- */
+	 * Open the app logs directory in the operating system file explorer.
+	 */
+	function openLogsFolder () {
+		try {
+			const logsDir = app.getPath( 'logs' );
+			shell.openPath( logsDir );
+		} catch ( error ) {
+			dialog.showErrorBox(
+				'Open Logs Folder Failed',
+				`Could not open logs folder: ${error.message}`
+			);
+		}
+	}
+
+	/**
+	 * Copy startup diagnostics to clipboard to simplify support requests.
+	 */
+	function copyStartupDiagnostics () {
+		const diagnostics = [
+			`Timestamp: ${new Date().toISOString()}`,
+			`App: ${globalSettings.appName}`,
+			`Version: ${app.getVersion()}`,
+			`Platform: ${process.platform} ${process.arch}`,
+			`Node: ${process.versions.node}`,
+			`Electron: ${process.versions.electron}`,
+			`Server Origin: ${globalSettings.serverOrigin}`,
+			`Server Port: ${globalSettings.serverPort}`,
+			`Debug Mode: ${globalSettings.serverDebugMode ? 'Enabled' : 'Disabled'}`,
+			`App Home: ${globalSettings.appHome}`
+		].join( '\n' );
+
+		clipboard.writeText( diagnostics );
+		dialog.showMessageBox( mainWindow, {
+			type: 'info',
+			title: 'Diagnostics Copied',
+			message: 'Startup diagnostics were copied to the clipboard.',
+			detail: diagnostics,
+			buttons: [ 'OK' ]
+		} );
+	}
+
+	/**
+	 * Create the main application window
+	 */
 function createWindow () {
     mainWindow = new BrowserWindow( {
         width: globalSettings.windowWidth,
@@ -346,6 +448,7 @@ function createWindow () {
             nodeIntegration: false,
             contextIsolation: true,
             enableRemoteModule: false,
+			preload: path.join( thisDirName, "preload.js" ),
 			devTools: enableDevTools
         }
     } );

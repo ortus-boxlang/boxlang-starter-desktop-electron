@@ -1,8 +1,6 @@
 {
-	"port": 59700,
-	"host": "127.0.0.1",
+	"host": "localhost",
 	"webRoot": "public",
-	"serverHome": ".boxlang",
 	"rewrites": true,
 	"debug": false,
 	"envFile": ".env"

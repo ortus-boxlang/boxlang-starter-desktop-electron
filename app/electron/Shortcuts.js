@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { globalShortcut, shell } from 'electron';
+import { globalShortcut } from 'electron';
 
 /**
  * Shortcuts class - Manages global keyboard shortcuts
@@ -36,29 +36,51 @@ export class Shortcuts {
     /**
      * Register global shortcuts
      */
-    register ( callbacks = {} ) {
-        // Quick show/hide application
-        globalShortcut.register( 'CommandOrControl+Shift+L', () => {
-            if ( this.mainWindow ) {
-                if ( this.mainWindow.isVisible() && this.mainWindow.isFocused() ) {
-                    this.mainWindow.hide();
-                } else {
-                    this.mainWindow.show();
-                    this.mainWindow.focus();
-                }
-            }
-        } );
+	register ( callbacks = {} ) {
+		const isMac = process.platform === 'darwin';
 
-        // Quick restart BoxLang server (CmdOrCtrl+Shift+B to avoid conflict with Force Reload)
-        globalShortcut.register( 'CommandOrControl+Shift+B', () => {
-            callbacks.restartBoxLang?.();
-        } );
+		// Open DevTools (platform-aware accelerator)
+		globalShortcut.register( isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I', () => {
+			if ( this.mainWindow ) {
+				this.mainWindow.webContents.send( 'open-devtools' );
+			}
+		} );
 
-        // Open application in browser
-        globalShortcut.register( 'CommandOrControl+Shift+O', () => {
-            shell.openExternal( `http://localhost:${this.globalSettings.serverPort}` );
-        } );
-    }
+		// Open settings panel (CmdOrCtrl+,)
+		globalShortcut.register( 'CommandOrControl+,', () => {
+			if ( this.mainWindow ) {
+				this.mainWindow.webContents.send( 'open-settings' );
+			}
+		} );
+
+		// Navigate to dashboard/home (CmdOrCtrl+.)
+		globalShortcut.register( 'CommandOrControl+.', () => {
+			if ( this.mainWindow ) {
+				this.mainWindow.webContents.send( 'open-home' );
+			}
+		} );
+
+		// Toggle terminal panel (CmdOrCtrl+`)
+		globalShortcut.register( 'CommandOrControl+`', () => {
+			if ( this.mainWindow ) {
+				this.mainWindow.webContents.send( 'toggle-terminal' );
+			}
+		} );
+
+		// Toggle dark/light mode (CmdOrCtrl+Shift+L)
+		globalShortcut.register( 'CommandOrControl+Shift+L', () => {
+			if ( this.mainWindow ) {
+				this.mainWindow.webContents.send( 'toggle-theme' );
+			}
+		} );
+
+		// Restart BoxLang (CmdOrCtrl+Shift+R)
+		if ( callbacks.restartBoxLang ) {
+			globalShortcut.register( 'CommandOrControl+Shift+R', () => {
+				callbacks.restartBoxLang();
+			} );
+		}
+	}
 
     /**
      * Unregister all global shortcuts

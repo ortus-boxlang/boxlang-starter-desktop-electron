@@ -79,11 +79,6 @@ export class AppMenu {
                         }
                     },
                     { type: 'separator' },
-                    {
-                        label: 'Restart BoxLang Server',
-                        click: () => callbacks.restartBoxLang?.()
-                    },
-                    { type: 'separator' },
                     // On non-Mac, put Quit in File menu
                     ...( !isMac ? [ {
                         label: 'Quit',
@@ -148,6 +143,15 @@ export class AppMenu {
                         label: 'About ' + app.getName(),
                         click: () => callbacks.showAbout?.()
                     },
+                    {
+                        label: 'Open Logs Folder',
+                        click: () => callbacks.openLogsFolder?.()
+                    },
+                    {
+                        label: 'Copy Startup Diagnostics',
+                        click: () => callbacks.copyStartupDiagnostics?.()
+                    },
+                    { type: 'separator' },
                     {
                         label: "BoxLang Website",
                         click: () => shell.openExternal( 'https://www.boxlang.io' )

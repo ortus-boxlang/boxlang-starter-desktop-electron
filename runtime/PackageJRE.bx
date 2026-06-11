@@ -1,0 +1,297 @@
+/**
+ * BoxLang Embedded JRE Packager
+ *
+ * Downloads BellSoft Liberica JDK Lite 21 for a given {os, arch} into runtime/jre/
+ * so the packaged Electron app ships with its own Java runtime and does not
+ * depend on a system-installed JDK.
+ *
+ * Usage:
+ *   boxlang runtime/PackageJRE.bx               (defaults to current host)
+ *   boxlang runtime/PackageJRE.bx --os=macos --arch=aarch64
+ *   boxlang runtime/PackageJRE.bx --os=windows --arch=x86_64 --force
+ *
+ * Supported os:   macos | windows | linux
+ * Supported arch: x86_64 | aarch64
+ */
+class {
+
+	static {
+		API_URL          = "https://api.bell-sw.com/v1/liberica/releases"
+		FEATURE_VERSION  = 21
+		BUNDLE_TYPE      = "jdk-lite"
+	}
+
+	function main( args = [] ) {
+		var cliArgs = CliGetArgs()
+		param cliArgs.options.force = false
+		param cliArgs.options.os    = detectHostOs()
+		param cliArgs.options.arch  = detectHostArch()
+
+		var targetOs   = lcase( cliArgs.options.os )
+		var targetArch = lcase( cliArgs.options.arch )
+		var packageType = ( targetOs == "windows" ) ? "zip" : "tar.gz"
+		var targetTag  = targetOs & "-" & targetArch
+
+		println( "=== BoxLang Embedded JRE Packager ===" )
+		println( "🎯 Target: " & targetTag & " (" & packageType & ")" )
+
+		try {
+			// Skip if already downloaded for this target
+			if ( isAlreadyDownloaded( targetTag ) ) {
+				println( "🕺 Embedded JRE for " & targetTag & " is already installed." )
+				if ( !cliArgs.options.force ) {
+					println( "Use --force to re-download." )
+					return
+				}
+				println( "⚡ Force flag detected, re-downloading..." )
+			}
+
+			var release = resolveRelease( targetOs, targetArch, packageType )
+			println( "✅ Resolved Liberica JDK Lite: " & release.version & " (" & release.downloadUrl & ")" )
+
+			downloadAndExtract( release.downloadUrl, packageType, targetOs, targetArch )
+
+			fileWrite( expandPath( "./jre/VERSION" ), release.version & " " & targetTag )
+
+			println( "✅ Embedded JRE installed at: " & expandPath( "./jre/" ) )
+		} catch ( any e ) {
+			println( "❌ Error packaging embedded JRE: " & e.message )
+			println( e.detail ?: "" )
+			throw e
+		}
+	}
+
+	/**
+	 * Detect the current host operating system using Java's os.name property.
+	 */
+	private function detectHostOs() {
+		var osName = lcase( createObject( "java", "java.lang.System" ).getProperty( "os.name" ) )
+		if ( osName contains "mac" || osName contains "darwin" ) return "macos"
+		if ( osName contains "win" )                            return "windows"
+		return "linux"
+	}
+
+	/**
+	 * Detect the current host architecture using Java's os.arch property
+	 * and normalize to Liberica's naming (x86_64 | aarch64).
+	 */
+	private function detectHostArch() {
+		var arch = lcase( createObject( "java", "java.lang.System" ).getProperty( "os.arch" ) )
+		if ( arch == "aarch64" || arch == "arm64" ) return "aarch64"
+		return "x86_64"
+	}
+
+	/**
+	 * Check if a JRE for the given target tag is already installed.
+	 */
+	private function isAlreadyDownloaded( required string targetTag ) {
+		var versionFile = expandPath( "./jre/VERSION" )
+		var javaBin     = expandPath( "./jre/bin/" )
+
+		if ( !fileExists( versionFile ) || !directoryExists( javaBin ) ) {
+			return false
+		}
+
+		return fileRead( versionFile ).trim() contains arguments.targetTag
+	}
+
+	/**
+	 * Query the BellSoft Liberica REST API for the latest GA jdk-lite 21 binary
+	 * matching the requested os/arch/packageType.
+	 *
+	 * Returns a struct with { version, downloadUrl }.
+	 */
+	private function resolveRelease(
+		required string targetOs,
+		required string targetArch,
+		required string packageType
+	) {
+		// Liberica's API splits arch into {arch, bitness}: arch is the family
+		// (x86 / arm / ppc / sparc / riscv) and bitness is 32 / 64.
+		var apiArch    = ( arguments.targetArch == "aarch64" ) ? "arm" : "x86"
+		var apiBitness = 64
+
+		var apiUrl = static.API_URL
+			& "?version-feature=" & static.FEATURE_VERSION
+			& "&bundle-type="     & static.BUNDLE_TYPE
+			& "&os="              & arguments.targetOs
+			& "&arch="            & apiArch
+			& "&bitness="         & apiBitness
+			& "&package-type="    & arguments.packageType
+			& "&output=json"
+
+		println( "🔎 Querying Liberica API: " & apiUrl )
+
+		bx:http
+			method="GET"
+			url="#apiUrl#"
+			timeout="60"
+			result="apiResult" {
+		}
+
+		if ( apiResult.statusCode != "200" ) {
+			throw(
+				type    = "LibericaApiError",
+				message = "Liberica API request failed: " & apiResult.statusCode & " " & apiResult.statusText,
+				detail  = apiResult.fileContent
+			)
+		}
+
+		var releases = jsonDeserialize( apiResult.fileContent )
+		if ( !isArray( releases ) || arrayLen( releases ) == 0 ) {
+			throw(
+				type    = "LibericaApiError",
+				message = "No Liberica JDK Lite 21 release found for " & arguments.targetOs & "/" & arguments.targetArch,
+				detail  = apiResult.fileContent
+			)
+		}
+
+		var release = releases[ 1 ]
+		return {
+			version     : release.version ?: "unknown",
+			downloadUrl : release.downloadUrl
+		}
+	}
+
+	/**
+	 * Download the archive and extract it into runtime/jre/, normalizing the
+	 * layout so runtime/jre/bin/java[.exe] always exists.
+	 */
+	private function downloadAndExtract(
+		required string downloadUrl,
+		required string packageType,
+		required string targetOs,
+		required string targetArch
+	) {
+		var fileName     = "jre." & arguments.packageType
+		var downloadDir  = expandPath( "./" )
+		var archivePath  = downloadDir & fileName
+		var jrePath      = expandPath( "./jre" )
+
+		println( "⬇️  Downloading: " & arguments.downloadUrl )
+
+		bx:http
+			method="GET"
+			url="#arguments.downloadUrl#"
+			path="#downloadDir#"
+			file="#fileName#"
+			getAsBinary="yes"
+			timeout="600"
+			result="httpResult" {
+		}
+
+		if ( httpResult.statusCode != "200" ) {
+			throw(
+				type    = "DownloadError",
+				message = "Failed to download Liberica JDK Lite: " & httpResult.statusCode & " " & httpResult.statusText,
+				detail  = "URL: " & arguments.downloadUrl
+			)
+		}
+
+		if ( !fileExists( archivePath ) ) {
+			throw(
+				type    = "DownloadError",
+				message = "Downloaded archive not found at: " & archivePath
+			)
+		}
+
+		println( "✅ Downloaded: " & archivePath )
+
+		// Wipe any existing JRE directory
+		if ( directoryExists( jrePath ) ) {
+			directoryDelete( jrePath, true )
+		}
+		directoryCreate( jrePath )
+
+		// Extract — different tooling per format
+		var stagingDir = expandPath( "./jre-staging" )
+		if ( directoryExists( stagingDir ) ) {
+			directoryDelete( stagingDir, true )
+		}
+		directoryCreate( stagingDir )
+
+		if ( arguments.packageType == "zip" ) {
+			println( "📦 Unzipping into staging: " & stagingDir )
+			bx:zip action="unzip" file="#archivePath#" destination="#stagingDir#" overwrite="true" {}
+		} else {
+			println( "📦 Tar extracting into staging: " & stagingDir )
+			var tarResult = createObject( "java", "java.lang.ProcessBuilder" )
+				.init( [ "tar", "-xzf", archivePath, "-C", stagingDir ] )
+				.inheritIO()
+				.start()
+				.waitFor()
+			if ( tarResult != 0 ) {
+				throw(
+					type    = "ExtractionError",
+					message = "tar -xzf returned non-zero exit code: " & tarResult,
+					detail  = "Archive: " & archivePath
+				)
+			}
+		}
+
+		// Liberica archives extract to a single versioned root like "jdk-21.0.5-lite/".
+		// listInfo="path" returns an array of absolute paths.
+		var stagingEntries = directoryList( stagingDir, false, "path" )
+			.filter( ( p ) => directoryExists( p ) )
+
+		if ( arrayLen( stagingEntries ) == 0 ) {
+			throw(
+				type    = "ExtractionError",
+				message = "No top-level directory found in extracted archive"
+			)
+		}
+
+		var rootDir = stagingEntries[ 1 ]
+
+		// macOS bundle layout: jdk-XX-lite/Contents/Home/
+		if ( arguments.targetOs == "macos" && directoryExists( rootDir & "/Contents/Home" ) ) {
+			rootDir = rootDir & "/Contents/Home"
+		}
+
+		println( "📁 Promoting JDK contents from: " & rootDir )
+
+		// Move contents of rootDir into runtime/jre/
+		directoryList( rootDir, false, "path" ).each( ( srcPath ) => {
+			var entryName = getFileFromPath( srcPath )
+			var destPath  = jrePath & "/" & entryName
+			if ( directoryExists( srcPath ) ) {
+				directoryMove( srcPath, destPath )
+			} else {
+				fileMove( srcPath, destPath )
+			}
+		} )
+
+		// Cleanup staging and archive
+		directoryDelete( stagingDir, true )
+		if ( fileExists( archivePath ) ) {
+			fileDelete( archivePath )
+		}
+
+		// Verify
+		var javaExe = ( arguments.targetOs == "windows" ) ? "java.exe" : "java"
+		if ( !fileExists( jrePath & "/bin/" & javaExe ) ) {
+			throw(
+				type    = "ExtractionError",
+				message = "Embedded JRE missing bin/" & javaExe & " after extraction"
+			)
+		}
+
+		// Make bin executables runnable on Unix-like systems
+		if ( arguments.targetOs != "windows" ) {
+			try {
+				var chmodResult = createObject( "java", "java.lang.ProcessBuilder" )
+					.init( [ "chmod", "-R", "+x", jrePath & "/bin" ] )
+					.start()
+					.waitFor()
+				if ( chmodResult == 0 ) {
+					println( "✅ Marked runtime/jre/bin contents executable" )
+				} else {
+					println( "⚠️  chmod returned non-zero exit code: " & chmodResult )
+				}
+			} catch ( any e ) {
+				println( "⚠️  Could not set executable permissions on runtime/jre/bin: " & e.message )
+			}
+		}
+	}
+
+}

@@ -3,22 +3,10 @@
 settings.xml
 WEB-INF
 
-# BoxLang Home — runtime data (classes, logs, seed) only; config lives in .boxlang.json
-.boxlang/classes/**
-.boxlang/logs/**
-# Seed is never in source, so each desktop app is secure
-.boxlang/config/.seed
-
-# MiniServer runtime home (logs, compiled classes, etc.)
-runtime/bin/**
-runtime/lib/**
-runtime/VERSION
-
 # Engines + Database + CBFS + Secrets
 .env
-.engine/**
+.boxlang/**
 .cbfs/**
-.database/**
 
 # logs + tests
 logs/**
@@ -30,32 +18,25 @@ npm-debug.log
 yarn-error.log
 
 ## Ignored Dependencies
-coldbox/**
-testbox/**
-modules/**
-boxlang_modules/**
+lib/coldbox/**
+lib/testbox/**
+lib/java/**
+lib/modules/**
+runtime/modules/**
+runtime/bin/**
+runtime/lib/**
+runtime/jre/**
+runtime/jre.zip
+runtime/jre.tar.gz
+runtime/jre-staging/**
+runtime/VERSION
 
 # Ignore dist folder
 dist/**
 
-# Vite specific
-.vite/
-out/
+# Built assets (generated at package time)
 public/includes/resources/**
 
-# MiniServer packaging (exclude downloaded binaries)
-.miniserver/bin/
-.miniserver/lib/
-.miniserver/VERSION
-.miniserver/*.zip
-
-# Electron build artifacts
-*.app
-*.dmg
-*.pkg
-*.exe
-*.msi
-*.deb
-*.rpm
-*.tar.gz
-*.zip
+# AI
+.claude/**
+.agents/skills/**
